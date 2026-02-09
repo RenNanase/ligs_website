@@ -1,0 +1,23 @@
+"use client"
+
+import { HeroSection } from "@/components/sections/hero-section"
+import { StatisticsSection } from "@/components/sections/statistics-section"
+import { RubberPriceSection } from "@/components/sections/rubber-price-section"
+import { ActivitySection } from "@/components/sections/activity-section"
+import { AnnouncementSection } from "@/components/sections/announcement-section"
+import { TendersSection } from "@/components/sections/tenders-section"
+import { SocialMediaSection } from "@/components/sections/social-media-section"
+
+export default function Page() {
+  return (
+    <>
+      <HeroSection />
+      <StatisticsSection />
+      <RubberPriceSection />
+      <ActivitySection />
+      <AnnouncementSection />
+      <TendersSection />
+      <SocialMediaSection />
+    </>
+  )
+}
