@@ -21,34 +21,26 @@ const emptyMember: Omit<TeamMember, "id"> = {
 
 export default function AdminTeamPage() {
   const { t } = useLanguage()
-  const { team, setTeam } = useDataStore()
+  const { team, createTeamMember, updateTeamMember, deleteTeamMember } = useDataStore()
   const [editing, setEditing] = useState<TeamMember | null>(null)
   const [creating, setCreating] = useState(false)
   const [form, setForm] = useState(emptyMember)
 
-  const handleCreate = () => {
-    const newMember: TeamMember = {
-      ...form,
-      id: Date.now().toString(),
-    }
-    setTeam([...team, newMember])
+  const handleCreate = async () => {
+    await createTeamMember(form)
     setCreating(false)
     setForm(emptyMember)
   }
 
-  const handleUpdate = () => {
+  const handleUpdate = async () => {
     if (!editing) return
-    setTeam(
-      team.map((m) =>
-        m.id === editing.id ? { ...editing, ...form } : m
-      )
-    )
+    await updateTeamMember(editing.id, form)
     setEditing(null)
     setForm(emptyMember)
   }
 
-  const handleDelete = (id: string) => {
-    setTeam(team.filter((m) => m.id !== id))
+  const handleDelete = async (id: string) => {
+    await deleteTeamMember(id)
   }
 
   const startEdit = (member: TeamMember) => {

@@ -13,14 +13,14 @@ import { useState } from "react"
 
 export default function AdminAnnouncementsPage() {
   const { t } = useLanguage()
-  const { announcements, setAnnouncements } = useDataStore()
+  const { announcements, createAnnouncement, updateAnnouncement, deleteAnnouncement } = useDataStore()
   const [editing, setEditing] = useState<Announcement | null>(null)
   const [isNew, setIsNew] = useState(false)
 
   const handleAdd = () => {
     setIsNew(true)
     setEditing({
-      id: Date.now().toString(),
+      id: "",
       title: "",
       titleMs: "",
       summary: "",
@@ -31,29 +31,28 @@ export default function AdminAnnouncementsPage() {
     })
   }
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!editing) return
     if (isNew) {
-      setAnnouncements([...announcements, editing])
+      const { id, ...data } = editing
+      await createAnnouncement(data)
     } else {
-      setAnnouncements(
-        announcements.map((a) => (a.id === editing.id ? editing : a))
-      )
+      const { id, ...data } = editing
+      await updateAnnouncement(editing.id, data)
     }
     setEditing(null)
     setIsNew(false)
   }
 
-  const handleDelete = (id: string) => {
-    setAnnouncements(announcements.filter((a) => a.id !== id))
+  const handleDelete = async (id: string) => {
+    await deleteAnnouncement(id)
   }
 
-  const togglePin = (id: string) => {
-    setAnnouncements(
-      announcements.map((a) =>
-        a.id === id ? { ...a, pinned: !a.pinned } : a
-      )
-    )
+  const togglePin = async (id: string) => {
+    const item = announcements.find((a) => a.id === id)
+    if (item) {
+      await updateAnnouncement(id, { pinned: !item.pinned })
+    }
   }
 
   return (

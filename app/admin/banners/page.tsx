@@ -12,12 +12,12 @@ import { useState } from "react"
 
 export default function AdminBannersPage() {
   const { t } = useLanguage()
-  const { banners, setBanners } = useDataStore()
+  const { banners, saveBanners } = useDataStore()
   const [form, setForm] = useState<BannerSlide[]>(banners)
   const [saved, setSaved] = useState(false)
 
-  const handleSave = () => {
-    setBanners(form)
+  const handleSave = async () => {
+    await saveBanners(form)
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
   }

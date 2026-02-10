@@ -1,7 +1,8 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname, useRouter } from "next/navigation"
+import { usePathname } from "next/navigation"
+import { signOut } from "next-auth/react"
 import { useLanguage } from "@/lib/language-context"
 import {
   LayoutDashboard,
@@ -37,15 +38,11 @@ const navItems = [
 
 export function AdminSidebar() {
   const pathname = usePathname()
-  const router = useRouter()
   const { language, setLanguage, t } = useLanguage()
   const [mobileOpen, setMobileOpen] = useState(false)
 
   const handleLogout = () => {
-    if (typeof window !== "undefined") {
-      sessionStorage.removeItem("admin_auth")
-    }
-    router.push("/admin")
+    signOut({ callbackUrl: "/admin" })
   }
 
   const sidebarContent = (

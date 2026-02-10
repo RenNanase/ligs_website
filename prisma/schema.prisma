@@ -1,0 +1,113 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model BannerSlide {
+  id        String @id @default(cuid())
+  image     String @default("") @db.VarChar(2000)
+  title     String @db.VarChar(255)
+  titleMs   String @db.VarChar(255)
+  caption   String @db.Text
+  captionMs String @db.Text
+  ctaText   String @db.VarChar(255)
+  ctaTextMs String @db.VarChar(255)
+  ctaLink   String @db.VarChar(255)
+  sortOrder Int    @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model StatItem {
+  id        String @id @default(cuid())
+  labelKey  String @db.VarChar(100)
+  value     Int
+  suffix    String @default("") @db.VarChar(50)
+  sortOrder Int    @default(0)
+}
+
+model NewsArticle {
+  id        String   @id @default(cuid())
+  title     String   @db.VarChar(500)
+  titleMs   String   @db.VarChar(500)
+  content   String   @db.Text
+  contentMs String   @db.Text
+  date      String   @db.VarChar(20)
+  image     String   @default("") @db.VarChar(2000)
+  category  String   @db.VarChar(100)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model TeamMember {
+  id        String   @id @default(cuid())
+  name      String   @db.VarChar(255)
+  role      String   @db.VarChar(255)
+  roleMs    String   @db.VarChar(255)
+  bio       String   @db.Text
+  bioMs     String   @db.Text
+  image     String   @default("") @db.VarChar(2000)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Announcement {
+  id        String   @id @default(cuid())
+  title     String   @db.VarChar(500)
+  titleMs   String   @db.VarChar(500)
+  summary   String   @db.Text
+  summaryMs String   @db.Text
+  date      String   @db.VarChar(20)
+  pinned    Boolean  @default(false)
+  category  String   @db.VarChar(100)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Tender {
+  id          String   @id @default(cuid())
+  title       String   @db.VarChar(500)
+  titleMs     String   @db.VarChar(500)
+  referenceNo String   @db.VarChar(50)
+  closingDate String   @db.VarChar(20)
+  publishDate String   @db.VarChar(20)
+  status      String   @default("open") @db.VarChar(20)
+  category    String   @db.VarChar(100)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model LandingContent {
+  id             String      @id @default(cuid())
+  heroTitle      String      @db.VarChar(500)
+  heroTitleMs    String      @db.VarChar(500)
+  heroSubtitle   String      @db.Text
+  heroSubtitleMs String      @db.Text
+  highlights     Highlight[]
+  updatedAt      DateTime    @updatedAt
+}
+
+model Highlight {
+  id               String         @id @default(cuid())
+  title            String         @db.VarChar(255)
+  titleMs          String         @db.VarChar(255)
+  description      String         @db.Text
+  descriptionMs    String         @db.Text
+  icon             String         @db.VarChar(50)
+  sortOrder        Int            @default(0)
+  landingContent   LandingContent @relation(fields: [landingContentId], references: [id], onDelete: Cascade)
+  landingContentId String
+}

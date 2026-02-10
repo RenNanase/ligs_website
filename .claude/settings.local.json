@@ -1,7 +1,30 @@
 {
   "permissions": {
     "allow": [
-      "Bash(pnpm install:*)"
+      "Bash(pnpm install:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npx typescript:*)",
+      "Bash(npm install)",
+      "Bash(npm install:*)",
+      "Bash(npx --no-install tsc:*)",
+      "Bash(npx prisma init:*)",
+      "Bash(npx prisma migrate dev:*)",
+      "Bash(where:*)",
+      "Bash(net start:*)",
+      "Bash(sc query:*)",
+      "Bash(\"C:/laragon/bin/mysql/mysql-8.4.3-winx64/bin/mysql.exe\" -u root -e \"SELECT 1\")",
+      "Bash(npx prisma migrate:*)",
+      "Bash(\"C:\\\\laragon\\\\bin\\\\mysql\\\\mysql-8.4.3-winx64\\\\bin\\\\mysql.exe\" -u root -e \"DROP DATABASE IF EXISTS ligs_website; CREATE DATABASE ligs_website;\")",
+      "Bash(npx prisma db seed:*)",
+      "Bash(npx prisma generate:*)",
+      "Bash(node -e:*)",
+      "Bash(node --experimental-strip-types --no-warnings prisma/seed.ts:*)",
+      "Bash(\"C:\\\\laragon\\\\bin\\\\mysql\\\\mysql-8.4.3-winx64\\\\bin\\\\mysql.exe\":*)",
+      "Bash(npm run dev:*)",
+      "Bash(curl:*)",
+      "Bash(npx kill-port:*)",
+      "Bash(taskkill:*)",
+      "Bash(xargs:*)"
     ]
   }
 }

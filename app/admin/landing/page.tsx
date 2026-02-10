@@ -12,12 +12,12 @@ import { useState } from "react"
 
 export default function AdminLandingPage() {
   const { t } = useLanguage()
-  const { landing, setLanding } = useDataStore()
+  const { landing, saveLanding } = useDataStore()
   const [form, setForm] = useState(landing)
   const [saved, setSaved] = useState(false)
 
-  const handleSave = () => {
-    setLanding(form)
+  const handleSave = async () => {
+    await saveLanding(form)
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
   }

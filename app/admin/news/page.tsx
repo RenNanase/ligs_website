@@ -22,34 +22,26 @@ const emptyArticle: Omit<NewsArticle, "id"> = {
 
 export default function AdminNewsPage() {
   const { t } = useLanguage()
-  const { news, setNews } = useDataStore()
+  const { news, createNews, updateNews, deleteNews } = useDataStore()
   const [editing, setEditing] = useState<NewsArticle | null>(null)
   const [creating, setCreating] = useState(false)
   const [form, setForm] = useState(emptyArticle)
 
-  const handleCreate = () => {
-    const newArticle: NewsArticle = {
-      ...form,
-      id: Date.now().toString(),
-    }
-    setNews([newArticle, ...news])
+  const handleCreate = async () => {
+    await createNews(form)
     setCreating(false)
     setForm(emptyArticle)
   }
 
-  const handleUpdate = () => {
+  const handleUpdate = async () => {
     if (!editing) return
-    setNews(
-      news.map((n) =>
-        n.id === editing.id ? { ...editing, ...form } : n
-      )
-    )
+    await updateNews(editing.id, form)
     setEditing(null)
     setForm(emptyArticle)
   }
 
-  const handleDelete = (id: string) => {
-    setNews(news.filter((n) => n.id !== id))
+  const handleDelete = async (id: string) => {
+    await deleteNews(id)
   }
 
   const startEdit = (article: NewsArticle) => {

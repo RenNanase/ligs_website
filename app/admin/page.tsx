@@ -4,6 +4,7 @@ import React from "react"
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import { signIn, useSession } from "next-auth/react"
 import { useLanguage } from "@/lib/language-context"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -13,24 +14,36 @@ import { Lock, Mail } from "lucide-react"
 export default function AdminLoginPage() {
   const { t } = useLanguage()
   const router = useRouter()
+  const { status } = useSession()
   const [error, setError] = useState("")
+  const [loading, setLoading] = useState(false)
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  // Redirect if already authenticated
+  if (status === "authenticated") {
+    router.push("/admin/dashboard")
+    return null
+  }
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+    setError("")
+    setLoading(true)
+
     const formData = new FormData(e.currentTarget)
     const email = formData.get("email") as string
     const password = formData.get("password") as string
 
-    // Simple demo auth
-    if (email === "admin@corpsite.com" && password === "admin123") {
-      if (typeof window !== "undefined") {
-        sessionStorage.setItem("admin_auth", "true")
-      }
-      router.push("/admin/dashboard")
+    const result = await signIn("credentials", {
+      email,
+      password,
+      redirect: false,
+    })
+
+    if (result?.error) {
+      setError("Invalid credentials. Please try again.")
+      setLoading(false)
     } else {
-      setError(
-        "Invalid credentials. Use admin@corpsite.com / admin123"
-      )
+      router.push("/admin/dashboard")
     }
   }
 
@@ -91,9 +104,10 @@ export default function AdminLoginPage() {
           <Button
             type="submit"
             size="lg"
+            disabled={loading}
             className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-semibold"
           >
-            {t("admin.signin")}
+            {loading ? "Signing in..." : t("admin.signin")}
           </Button>
         </form>
 

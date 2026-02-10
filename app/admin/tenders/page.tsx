@@ -21,14 +21,14 @@ function StatusDot({ status }: { status: string }) {
 
 export default function AdminTendersPage() {
   const { t } = useLanguage()
-  const { tenders, setTenders } = useDataStore()
+  const { tenders, createTender, updateTender, deleteTender } = useDataStore()
   const [editing, setEditing] = useState<Tender | null>(null)
   const [isNew, setIsNew] = useState(false)
 
   const handleAdd = () => {
     setIsNew(true)
     setEditing({
-      id: Date.now().toString(),
+      id: "",
       title: "",
       titleMs: "",
       referenceNo: "",
@@ -39,19 +39,21 @@ export default function AdminTendersPage() {
     })
   }
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!editing) return
     if (isNew) {
-      setTenders([...tenders, editing])
+      const { id, ...data } = editing
+      await createTender(data)
     } else {
-      setTenders(tenders.map((t) => (t.id === editing.id ? editing : t)))
+      const { id, ...data } = editing
+      await updateTender(editing.id, data)
     }
     setEditing(null)
     setIsNew(false)
   }
 
-  const handleDelete = (id: string) => {
-    setTenders(tenders.filter((t) => t.id !== id))
+  const handleDelete = async (id: string) => {
+    await deleteTender(id)
   }
 
   return (
