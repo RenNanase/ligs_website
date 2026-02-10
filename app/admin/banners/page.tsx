@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
-import { Plus, Trash2, Save, GripVertical, ImageIcon } from "lucide-react"
+import { Plus, Trash2, Save, GripVertical } from "lucide-react"
+import { ImageUpload } from "@/components/ui/image-upload"
 import { useState } from "react"
 
 export default function AdminBannersPage() {
@@ -97,17 +98,11 @@ export default function AdminBannersPage() {
 
             <div className="grid gap-4 md:grid-cols-2">
               <div className="md:col-span-2">
-                <Label className="mb-2 block text-sm font-medium text-card-foreground">
-                  <span className="flex items-center gap-1.5">
-                    <ImageIcon className="h-3.5 w-3.5" />
-                    Image URL
-                  </span>
-                </Label>
-                <Input
-                  placeholder="https://example.com/banner.jpg (leave empty for gradient)"
+                <ImageUpload
+                  label="Image"
                   value={banner.image}
-                  onChange={(e) => updateBanner(index, "image", e.target.value)}
-                  className="bg-background"
+                  onChange={(url) => updateBanner(index, "image", url)}
+                  aspectRatio="banner"
                 />
               </div>
               <div>

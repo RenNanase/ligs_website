@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Plus, Pencil, Trash2, X } from "lucide-react"
+import { ImageUpload } from "@/components/ui/image-upload"
 import { useState } from "react"
 
 const emptyArticle: Omit<NewsArticle, "id"> = {
@@ -171,6 +172,14 @@ export default function AdminNewsPage() {
                   setForm({ ...form, category: e.target.value })
                 }
                 className="bg-background"
+              />
+            </div>
+            <div className="md:col-span-2">
+              <ImageUpload
+                label="Image"
+                value={form.image}
+                onChange={(url) => setForm({ ...form, image: url })}
+                aspectRatio="video"
               />
             </div>
           </div>

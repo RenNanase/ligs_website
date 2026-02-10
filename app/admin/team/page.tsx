@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Plus, Pencil, Trash2, X, User } from "lucide-react"
+import { ImageUpload } from "@/components/ui/image-upload"
 import { useState } from "react"
 
 const emptyMember: Omit<TeamMember, "id"> = {
@@ -152,6 +153,14 @@ export default function AdminTeamPage() {
                 value={form.bioMs}
                 onChange={(e) => setForm({ ...form, bioMs: e.target.value })}
                 className="bg-background"
+              />
+            </div>
+            <div className="md:col-span-2">
+              <ImageUpload
+                label="Image"
+                value={form.image}
+                onChange={(url) => setForm({ ...form, image: url })}
+                aspectRatio="square"
               />
             </div>
           </div>
