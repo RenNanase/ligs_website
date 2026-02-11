@@ -12,7 +12,7 @@ const _dmSans = DM_Sans({
 })
 
 export const metadata: Metadata = {
-  title: "CorpSite - Building the Future Together",
+  title: "LIGS - Building the Future Together",
   description:
     "We deliver innovative solutions that transform businesses and drive sustainable growth across industries.",
 }

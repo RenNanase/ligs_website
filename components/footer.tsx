@@ -18,7 +18,7 @@ export function Footer() {
         <div className="grid gap-12 md:grid-cols-3">
           {/* Brand */}
           <div>
-            <h3 className="mb-4 text-lg font-bold">CorpSite</h3>
+            <h3 className="mb-4 text-lg font-bold">LIGS</h3>
             <p className="text-sm leading-relaxed opacity-80">
               {t("hero.subtitle")}
             </p>
@@ -76,7 +76,7 @@ export function Footer() {
         </div>
 
         <div className="mt-12 border-t border-primary-foreground/20 pt-8 text-center text-sm opacity-60">
-          2026 CorpSite. {t("footer.rights")}
+          2026 LIGS. {t("footer.rights")}
         </div>
       </div>
     </footer>

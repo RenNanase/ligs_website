@@ -150,9 +150,9 @@ export function Navbar() {
             className="flex items-center gap-3 text-xl font-bold tracking-tight text-primary-foreground"
           >
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent text-accent-foreground text-sm font-black">
-              CS
+              LIGS
             </div>
-            <span className="font-heading hidden sm:inline">CorpSite</span>
+            <span className="font-heading hidden sm:inline">LIGS</span>
           </Link>
 
           {/* Desktop Navigation */}

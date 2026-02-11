@@ -53,7 +53,7 @@ export function AdminSidebar() {
           href="/admin/dashboard"
           className="text-lg font-bold text-sidebar-foreground"
         >
-          CorpSite Admin
+          LIGS Admin
         </Link>
       </div>
 

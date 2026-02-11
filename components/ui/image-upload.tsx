@@ -3,7 +3,7 @@
 import * as React from "react"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
-import { ImageIcon, Upload, X } from "lucide-react"
+import { ImageIcon, Upload, X, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 export interface ImageUploadProps {
@@ -11,7 +11,6 @@ export interface ImageUploadProps {
   onChange: (value: string) => void
   label?: string
   className?: string
-  /** Preview aspect ratio: "square" | "video" | "banner" */
   aspectRatio?: "square" | "video" | "banner"
 }
 
@@ -29,19 +28,42 @@ export function ImageUpload({
   aspectRatio = "video",
 }: ImageUploadProps) {
   const inputRef = React.useRef<HTMLInputElement>(null)
+  const [uploading, setUploading] = React.useState(false)
+  const [error, setError] = React.useState("")
   const [previewError, setPreviewError] = React.useState(false)
   const showPreview = Boolean(value) && !previewError
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (!file || !file.type.startsWith("image/")) return
-    const reader = new FileReader()
-    reader.onload = () => {
-      const dataUrl = reader.result
-      if (typeof dataUrl === "string") onChange(dataUrl)
+    if (!file) return
+
+    setError("")
+    setUploading(true)
+
+    try {
+      const formData = new FormData()
+      formData.append("file", file)
+
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        setError(data.error || "Upload failed")
+        return
+      }
+
+      onChange(data.url)
+      setPreviewError(false)
+    } catch {
+      setError("Upload failed. Please try again.")
+    } finally {
+      setUploading(false)
+      if (inputRef.current) inputRef.current.value = ""
     }
-    reader.readAsDataURL(file)
-    e.target.value = ""
   }
 
   const handleChoose = () => inputRef.current?.click()
@@ -50,9 +72,6 @@ export function ImageUpload({
     onChange("")
     setPreviewError(false)
   }
-
-  const handleImageError = () => setPreviewError(true)
-  const handleImageLoad = () => setPreviewError(false)
 
   return (
     <div className={cn("space-y-2", className)}>
@@ -63,7 +82,7 @@ export function ImageUpload({
       <input
         ref={inputRef}
         type="file"
-        accept="image/*"
+        accept="image/jpeg,image/png,image/webp,image/gif"
         className="sr-only"
         aria-hidden
         onChange={handleFileChange}
@@ -81,8 +100,8 @@ export function ImageUpload({
                 src={value}
                 alt=""
                 className="h-full w-full object-cover"
-                onError={handleImageError}
-                onLoad={handleImageLoad}
+                onError={() => setPreviewError(true)}
+                onLoad={() => setPreviewError(false)}
               />
               <Button
                 type="button"
@@ -100,9 +119,14 @@ export function ImageUpload({
               variant="outline"
               size="sm"
               onClick={handleChoose}
+              disabled={uploading}
               className="gap-2 shrink-0"
             >
-              <Upload className="h-4 w-4" />
+              {uploading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Upload className="h-4 w-4" />
+              )}
               Replace image
             </Button>
           </>
@@ -111,13 +135,21 @@ export function ImageUpload({
             type="button"
             variant="outline"
             onClick={handleChoose}
+            disabled={uploading}
             className="gap-2 h-auto py-6 border-dashed"
           >
-            <Upload className="h-5 w-5" />
-            Choose image from device
+            {uploading ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : (
+              <Upload className="h-5 w-5" />
+            )}
+            {uploading ? "Uploading..." : "Choose image from device"}
           </Button>
         )}
       </div>
+      {error && (
+        <p className="text-sm text-destructive">{error}</p>
+      )}
     </div>
   )
 }

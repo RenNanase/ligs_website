@@ -56,7 +56,7 @@ export default function AdminDashboardPage() {
           {t("admin.dashboard")}
         </h1>
         <p className="mt-1 text-muted-foreground">
-          Welcome to the CorpSite administration panel.
+          Welcome to the LIGS panel.
         </p>
       </div>
 

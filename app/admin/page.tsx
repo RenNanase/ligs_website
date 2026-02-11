@@ -58,7 +58,7 @@ export default function AdminLoginPage() {
             {t("admin.login")}
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            CorpSite Administration
+            Lembaga Industri Getah Sabah
           </p>
         </div>
 
@@ -80,7 +80,7 @@ export default function AdminLoginPage() {
                 name="email"
                 type="email"
                 required
-                placeholder="admin@corpsite.com"
+                placeholder="admin@ligs.com"
                 className="bg-background pl-10"
               />
             </div>
@@ -112,7 +112,7 @@ export default function AdminLoginPage() {
         </form>
 
         <p className="mt-6 text-center text-xs text-muted-foreground">
-          Demo: admin@corpsite.com / admin123
+          Demo: admin@ligs.com / admin123
         </p>
       </div>
     </div>
