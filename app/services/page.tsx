@@ -2,6 +2,7 @@
 
 import { useLanguage } from "@/lib/language-context"
 import { CtaSection } from "@/components/sections/cta-section"
+import { PageHeader } from "@/components/sections/page-header"
 import {
   Briefcase,
   Monitor,
@@ -40,20 +41,10 @@ export default function ServicesPage() {
 
   return (
     <>
-      {/* Page Header */}
-      <section className="bg-primary py-20">
-        <div className="mx-auto max-w-7xl px-6 text-center">
-          <h1 className="mb-4 font-heading text-4xl font-bold text-primary-foreground md:text-5xl">
-            {t("services.title")}
-          </h1>
-          <p className="text-lg text-primary-foreground/80">
-            {t("services.subtitle")}
-          </p>
-        </div>
-      </section>
+      <PageHeader title={t("services.title")} subtitle={t("services.subtitle")} />
 
       {/* Services Grid */}
-      <section className="bg-background py-24">
+      <section className="bg-primary-bg py-24">
         <div className="mx-auto max-w-7xl px-6">
           <div className="grid gap-8 md:grid-cols-2">
             {services.map((service) => {
@@ -61,7 +52,7 @@ export default function ServicesPage() {
               return (
                 <div
                   key={service.titleKey}
-                  className="group rounded-xl border border-border bg-card p-8 transition-all hover:border-primary/30 hover:shadow-lg"
+                  className="group rounded-xl border border-border bg-card p-8 transition-all hover:border-accent/50 hover:shadow-lg"
                 >
                   <div className="mb-6 inline-flex rounded-lg bg-primary/10 p-4">
                     <Icon className="h-7 w-7 text-primary" />

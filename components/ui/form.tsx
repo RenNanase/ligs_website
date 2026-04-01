@@ -11,6 +11,7 @@ import {
   FormProvider,
   useFormContext,
 } from 'react-hook-form'
+import { AlertCircle } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 import { Label } from '@/components/ui/label'
@@ -119,6 +120,7 @@ const FormControl = React.forwardRef<
           : `${formDescriptionId} ${formMessageId}`
       }
       aria-invalid={!!error}
+      data-error={!!error}
       {...props}
     />
   )
@@ -157,9 +159,17 @@ const FormMessage = React.forwardRef<
     <p
       ref={ref}
       id={formMessageId}
-      className={cn('text-sm font-medium text-destructive', className)}
+      role={error ? 'alert' : undefined}
+      className={cn(
+        'flex items-center gap-2 text-sm font-medium text-destructive',
+        error && 'rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2',
+        className
+      )}
       {...props}
     >
+      {error ? (
+        <AlertCircle className="h-4 w-4 shrink-0" aria-hidden />
+      ) : null}
       {body}
     </p>
   )

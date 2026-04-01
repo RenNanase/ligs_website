@@ -22,22 +22,38 @@ export const authOptions: NextAuthOptions = {
         const isValid = await bcrypt.compare(credentials.password, user.password)
         if (!isValid) return null
 
-        return { id: user.id, email: user.email, name: user.name }
+        const u = user as { id: string; email: string; name: string | null; role?: string; allowedModules?: unknown }
+        return {
+          id: u.id,
+          email: u.email,
+          name: u.name,
+          role: u.role ?? "user",
+          allowedModules: u.allowedModules ?? null,
+        }
       },
     }),
   ],
+  secret: process.env.NEXTAUTH_SECRET,
   session: { strategy: "jwt" },
   pages: { signIn: "/admin" },
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id
+        token.role = (user as { role?: string }).role ?? "user"
+        token.allowedModules = (user as { allowedModules?: unknown }).allowedModules ?? null
+        token.name = user.name
+        token.email = user.email
       }
       return token
     },
     async session({ session, token }) {
       if (session.user) {
-        (session.user as { id: string }).id = token.id as string
+        const u = session.user as { id?: string; role?: string; allowedModules?: unknown }
+        u.id = token.id as string
+        // Backward compat: old JWTs without role were admins before roles feature
+        u.role = (token.role as string) ?? "admin"
+        u.allowedModules = token.allowedModules as string[] | null
       }
       return session
     },

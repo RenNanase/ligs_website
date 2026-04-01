@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Plus, Pencil, Trash2, Pin, X } from "lucide-react"
+import { ImageUpload } from "@/components/ui/image-upload"
+import { Plus, Pencil, Trash2, Pin, X, Eye, EyeOff, Link2 } from "lucide-react"
 import { useState } from "react"
 
 export default function AdminAnnouncementsPage() {
@@ -27,17 +28,26 @@ export default function AdminAnnouncementsPage() {
       summaryMs: "",
       date: new Date().toISOString().split("T")[0],
       pinned: false,
+      active: true,
       category: "",
+      imageUrl: "",
+      linkUrl: "",
+      linkText: "",
+      links: [],
     })
   }
 
   const handleSave = async () => {
     if (!editing) return
+    const payload = { ...editing }
+    if (Array.isArray(payload.links)) {
+      payload.links = payload.links.filter((l) => (l?.url ?? "").trim() !== "")
+    }
     if (isNew) {
-      const { id, ...data } = editing
+      const { id, ...data } = payload
       await createAnnouncement(data)
     } else {
-      const { id, ...data } = editing
+      const { id, ...data } = payload
       await updateAnnouncement(editing.id, data)
     }
     setEditing(null)
@@ -55,6 +65,14 @@ export default function AdminAnnouncementsPage() {
     }
   }
 
+  const toggleActive = async (id: string) => {
+    const item = announcements.find((a) => a.id === id)
+    if (item) {
+      const newActive = item.active !== false ? false : true
+      await updateAnnouncement(id, { active: newActive })
+    }
+  }
+
   return (
     <AdminLayout>
       <div className="mb-8 flex items-center justify-between">
@@ -66,7 +84,7 @@ export default function AdminAnnouncementsPage() {
             {announcements.length} announcements total
           </p>
         </div>
-        <Button onClick={handleAdd} className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90">
+        <Button onClick={handleAdd} className="gap-2 bg-primary text-primary-foreground hover:bg-accent hover:text-accent-foreground">
           <Plus className="h-4 w-4" />
           {t("admin.add")}
         </Button>
@@ -134,7 +152,81 @@ export default function AdminAnnouncementsPage() {
                 placeholder="e.g. Notice, Policy, Training"
               />
             </div>
-            <div className="flex items-center gap-3 md:col-span-2">
+            <div className="space-y-3 md:col-span-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-base">Links (URL + display text)</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="gap-1"
+                  onClick={() => {
+                    const links = Array.isArray(editing.links) ? [...editing.links] : []
+                    setEditing({ ...editing, links: [...links, { url: "", text: "" }] })
+                  }}
+                >
+                  <Link2 className="h-3.5 w-3.5" />
+                  Add link
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Add one or more links. Each link has a URL and display text (what users see and click). Users can add multiple links per announcement.
+              </p>
+              {(Array.isArray(editing.links) ? editing.links : []).map((link, idx) => (
+                <div key={idx} className="flex flex-col gap-2 rounded-lg border border-border bg-muted/30 p-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <span className="text-xs font-medium text-muted-foreground">Link {idx + 1}</span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                      onClick={() => {
+                        const links = [...(editing.links ?? [])]
+                        links.splice(idx, 1)
+                        setEditing({ ...editing, links })
+                      }}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <Input
+                      type="url"
+                      value={link.url}
+                      onChange={(e) => {
+                        const links = [...(editing.links ?? [])]
+                        links[idx] = { ...link, url: e.target.value }
+                        setEditing({ ...editing, links })
+                      }}
+                      placeholder="https://example.com/document.pdf"
+                    />
+                    <Input
+                      value={link.text}
+                      onChange={(e) => {
+                        const links = [...(editing.links ?? [])]
+                        links[idx] = { ...link, text: e.target.value }
+                        setEditing({ ...editing, links })
+                      }}
+                      placeholder="e.g. Click here to view"
+                    />
+                  </div>
+                </div>
+              ))}
+              {(!editing.links || editing.links.length === 0) && (
+                <p className="text-sm text-muted-foreground italic">No links yet. Click &quot;Add link&quot; to add one or more links.</p>
+              )}
+            </div>
+            <div className="space-y-2 md:col-span-2">
+              <ImageUpload
+                label={t("admin.image")}
+                value={editing.imageUrl ?? ""}
+                onChange={(url) => setEditing({ ...editing, imageUrl: url })}
+                uploadPath="/api/upload"
+                aspectRatio="video"
+              />
+            </div>
+            <div className="flex flex-wrap items-center gap-6 md:col-span-2">
               <label className="flex cursor-pointer items-center gap-2 text-sm">
                 <input
                   type="checkbox"
@@ -144,10 +236,19 @@ export default function AdminAnnouncementsPage() {
                 />
                 Pin this announcement
               </label>
+              <label className="flex cursor-pointer items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={editing.active !== false}
+                  onChange={(e) => setEditing({ ...editing, active: e.target.checked })}
+                  className="h-4 w-4 rounded border-border text-primary accent-primary"
+                />
+                {t("announcements.active")}
+              </label>
             </div>
           </div>
           <div className="mt-6 flex gap-3">
-            <Button onClick={handleSave} className="bg-primary text-primary-foreground hover:bg-primary/90">
+            <Button onClick={handleSave} className="bg-primary text-primary-foreground hover:bg-accent hover:text-accent-foreground">
               {t("admin.save")}
             </Button>
             <Button variant="outline" className="bg-transparent" onClick={() => { setEditing(null); setIsNew(false) }}>
@@ -176,10 +277,28 @@ export default function AdminAnnouncementsPage() {
                   index < announcements.length - 1 ? "border-b border-border" : ""
                 }`}
               >
+                {item.imageUrl ? (
+                  <div className="h-14 w-20 shrink-0 overflow-hidden rounded-lg border border-border bg-muted">
+                    <img
+                      src={item.imageUrl}
+                      alt=""
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+                ) : (
+                  <div className="h-14 w-20 shrink-0 rounded-lg border border-dashed border-border bg-muted/50 flex items-center justify-center text-[10px] text-muted-foreground">
+                    No img
+                  </div>
+                )}
                 <div className="min-w-0 flex-1">
                   <div className="mb-1 flex items-center gap-2">
                     {item.pinned && (
                       <Pin className="h-3.5 w-3.5 text-accent" />
+                    )}
+                    {item.active === false && (
+                      <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
+                        {t("announcements.inactive")}
+                      </span>
                     )}
                     <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                       {item.category}
@@ -193,6 +312,19 @@ export default function AdminAnnouncementsPage() {
                   <Button
                     variant="ghost"
                     size="sm"
+                    onClick={() => toggleActive(item.id)}
+                    className={item.active !== false ? "text-green-600" : "text-muted-foreground"}
+                    title={item.active !== false ? "Set inactive (hide from website)" : "Set active (show on website)"}
+                  >
+                    {item.active !== false ? (
+                      <Eye className="h-4 w-4" />
+                    ) : (
+                      <EyeOff className="h-4 w-4" />
+                    )}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={() => togglePin(item.id)}
                     className={item.pinned ? "text-accent" : "text-muted-foreground"}
                     title={item.pinned ? "Unpin" : "Pin"}
@@ -202,7 +334,18 @@ export default function AdminAnnouncementsPage() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => { setEditing(item); setIsNew(false) }}
+                    onClick={() => {
+                      const itemToEdit = { ...item }
+                      if (!Array.isArray(itemToEdit.links) || itemToEdit.links.length === 0) {
+                        if (itemToEdit.linkUrl?.trim()) {
+                          itemToEdit.links = [{ url: itemToEdit.linkUrl, text: (itemToEdit.linkText || "Click here").trim() }]
+                        } else {
+                          itemToEdit.links = []
+                        }
+                      }
+                      setEditing(itemToEdit)
+                      setIsNew(false)
+                    }}
                   >
                     <Pencil className="h-4 w-4" />
                   </Button>

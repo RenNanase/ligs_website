@@ -17,7 +17,7 @@ export function HighlightsSection() {
   const { landing } = useDataStore()
 
   return (
-    <section className="bg-background py-24">
+    <section className="bg-primary-bg py-24">
       <div className="mx-auto max-w-7xl px-6">
         <div className="mb-16 text-center">
           <h2 className="mb-4 font-heading text-3xl font-bold text-foreground md:text-4xl">
@@ -34,7 +34,7 @@ export function HighlightsSection() {
             return (
               <div
                 key={highlight.id}
-                className="group rounded-xl border border-border bg-card p-8 transition-all hover:border-primary/30 hover:shadow-lg"
+                className="group rounded-xl border border-border bg-card p-8 transition-all hover:border-accent/50 hover:shadow-lg"
               >
                 <div className="mb-6 inline-flex rounded-lg bg-primary/10 p-3">
                   <Icon className="h-6 w-6 text-primary" />

@@ -1,122 +1,103 @@
 "use client"
 
 import { useLanguage } from "@/lib/language-context"
-import { Youtube, Facebook, Video } from "lucide-react"
+import { YoutubeEmbed } from "./youtube-embed"
+import { FacebookEmbed } from "./facebook-embed"
+import { TiktokEmbed } from "./tiktok-embed"
+import { Youtube, Facebook } from "lucide-react"
 import Link from "next/link"
 
-// Dummy social media data
-const socialMediaLinks = [
+/** Simple TikTok-style icon (Lucide has no brand icons) */
+function TiktokIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
+      <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z" />
+    </svg>
+  )
+}
+
+const platforms = [
   {
     id: "youtube",
     name: "YouTube",
     icon: Youtube,
-    url: "https://youtube.com/@placeholder",
-    color: "bg-red-500 hover:bg-red-600",
-    description: { en: "Watch our latest videos and tutorials", ms: "Tonton video dan tutorial terkini kami" },
-  },
-  {
-    id: "tiktok",
-    name: "TikTok",
-    icon: Video,
-    url: "https://tiktok.com/@placeholder",
-    color: "bg-black hover:bg-gray-800",
-    description: { en: "Follow us for quick tips and updates", ms: "Ikuti kami untuk tip pantas dan kemas kini" },
+    url: "https://www.youtube.com/@lembagaindustrigetahsabaho4672",
+    color: "text-red-500",
+    border: "border-red-500",
+    header: "bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-900/50",
   },
   {
     id: "facebook",
     name: "Facebook",
     icon: Facebook,
-    url: "https://facebook.com/placeholder",
-    color: "bg-blue-600 hover:bg-blue-700",
-    description: { en: "Connect with our community", ms: "Berhubung dengan komuniti kami" },
+    url: "https://www.facebook.com/61586889106536",
+    color: "text-[#1877F2]",
+    border: "border-[#1877F2]",
+    header: "bg-[#1877F2]/5 dark:bg-[#1877F2]/10 border-[#1877F2]/30 dark:border-[#1877F2]/20",
   },
-]
+  {
+    id: "tiktok",
+    name: "TikTok",
+    icon: TiktokIcon,
+    url: "https://www.tiktok.com/@kentalansikarapsabah",
+    color: "text-black dark:text-white",
+    border: "border-zinc-800 dark:border-zinc-600",
+    header: "bg-zinc-100 dark:bg-zinc-800/50 border-zinc-200 dark:border-zinc-700",
+  },
+] as const
 
 export function SocialMediaSection() {
-  const { language, t } = useLanguage()
+  const { t } = useLanguage()
 
   return (
-    <section className="bg-card py-20">
+    <section className="bg-primary-bg py-20">
       <div className="mx-auto max-w-7xl px-6">
         {/* Header */}
         <div className="mb-12 text-center">
           <h2 className="mb-3 font-heading text-3xl font-bold text-card-foreground md:text-4xl">
             {t("social.title")}
           </h2>
-          <p className="mx-auto max-w-2xl text-base leading-relaxed text-muted-foreground">
-            {t("social.subtitle")}
-          </p>
+         
         </div>
 
-        {/* Social Media Cards */}
-        <div className="grid gap-6 md:grid-cols-3">
-          {socialMediaLinks.map((platform) => {
+        {/* Embedded content grid */}
+        <div className="grid gap-6 sm:gap-8 lg:grid-cols-3">
+          {platforms.map((platform) => {
             const Icon = platform.icon
-            const description = language === "en" ? platform.description.en : platform.description.ms
-
+            const Embed =
+              platform.id === "youtube"
+                ? YoutubeEmbed
+                : platform.id === "facebook"
+                  ? FacebookEmbed
+                  : TiktokEmbed
             return (
-              <Link
+              <article
                 key={platform.id}
-                href={platform.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group"
+                className={`flex flex-col overflow-hidden rounded-2xl border-2 bg-white ${platform.border} shadow-sm transition-all hover:shadow-md hover:border-accent/50`}
               >
-                <div className="flex h-full flex-col items-center rounded-2xl border border-border bg-background p-8 text-center transition-all hover:border-primary/30 hover:shadow-lg">
-                  {/* Icon */}
-                  <div
-                    className={`mb-5 flex h-20 w-20 items-center justify-center rounded-2xl ${platform.color} transition-all group-hover:scale-110`}
+                {/* Compact card header */}
+                <div className={`flex items-center justify-between gap-2 border-b px-3 py-2 ${platform.header}`}>
+                  <div className="flex min-w-0 items-center gap-2">
+                    <Icon className={`h-4 w-4 shrink-0 ${platform.color}`} aria-hidden />
+                    <h3 className="truncate text-sm font-medium text-foreground">{platform.name}</h3>
+                  </div>
+                  <Link
+                    href={platform.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={`${t("social.follow")} on ${platform.name}`}
+                    className="shrink-0 text-xs font-medium text-primary transition-colors hover:text-accent hover:underline"
                   >
-                    <Icon className="h-10 w-10 text-white" />
-                  </div>
-
-                  {/* Platform Name */}
-                  <h3 className="mb-2 text-xl font-bold text-foreground">
-                    {platform.name}
-                  </h3>
-
-                  {/* Description */}
-                  <p className="mb-4 text-sm text-muted-foreground">
-                    {description}
-                  </p>
-
-                  {/* Follow Button */}
-                  <div className="mt-auto">
-                    <span className="inline-flex items-center gap-2 text-sm font-semibold text-primary transition-colors group-hover:text-accent">
-                      {t("social.follow")}
-                      <svg
-                        className="h-4 w-4 transition-transform group-hover:translate-x-1"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M17 8l4 4m0 0l-4 4m4-4H3"
-                        />
-                      </svg>
-                    </span>
-                  </div>
+                    {t("social.follow")}
+                  </Link>
                 </div>
-              </Link>
+                {/* Embed area */}
+                <div className="flex min-h-[320px] flex-1 flex-col p-4">
+                  <Embed />
+                </div>
+              </article>
             )
           })}
-        </div>
-
-        {/* Optional: Recent Posts Preview Section - Placeholder for future */}
-        <div className="mt-12 rounded-xl border border-dashed border-border bg-muted/30 p-8 text-center">
-          <p className="text-sm text-muted-foreground">
-            {language === "en"
-              ? "Recent posts from our social media will be displayed here"
-              : "Siaran terkini dari media sosial kami akan dipaparkan di sini"}
-          </p>
-          <p className="mt-2 text-xs text-muted-foreground/70">
-            {language === "en"
-              ? "(This feature will be integrated with API in future updates)"
-              : "(Ciri ini akan diintegrasikan dengan API dalam kemas kini akan datang)"}
-          </p>
         </div>
       </div>
     </section>

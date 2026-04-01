@@ -1,32 +1,30 @@
 "use client"
 
-import { type ReactNode } from "react"
+import { type ReactNode, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
 import { AdminSidebar } from "@/components/admin-sidebar"
-import { AdminThemeProvider } from "@/lib/theme-context"
+import { AdminPermissionGuard } from "@/components/admin-permission-guard"
 
 export function AdminLayout({ children }: { children: ReactNode }) {
   const router = useRouter()
   const { status } = useSession()
 
-  if (status === "loading") return null
+  useEffect(() => {
+    if (status === "unauthenticated") router.push("/admin")
+  }, [status, router])
 
-  if (status === "unauthenticated") {
-    router.push("/admin")
-    return null
-  }
+  if (status === "loading") return null
+  if (status === "unauthenticated") return null
 
   return (
-    <AdminThemeProvider>
-      <div className="min-h-screen bg-secondary">
-        <AdminSidebar />
-        <div className="lg:pl-64">
-          <div className="mx-auto max-w-6xl px-6 py-8 pt-16 lg:pt-8">
-            {children}
-          </div>
+    <div className="min-h-screen bg-primary-bg">
+      <AdminSidebar />
+      <div className="lg:pl-64">
+        <div className="mx-auto max-w-6xl px-6 py-8 pt-16 lg:pt-8">
+          <AdminPermissionGuard>{children}</AdminPermissionGuard>
         </div>
       </div>
-    </AdminThemeProvider>
+    </div>
   )
 }

@@ -2,6 +2,7 @@
 
 import { useLanguage } from "@/lib/language-context"
 import { CtaSection } from "@/components/sections/cta-section"
+import { PageHeader } from "@/components/sections/page-header"
 import { Target, Compass, Heart } from "lucide-react"
 
 export default function AboutPage() {
@@ -27,20 +28,10 @@ export default function AboutPage() {
 
   return (
     <>
-      {/* Page Header */}
-      <section className="bg-primary py-20">
-        <div className="mx-auto max-w-7xl px-6 text-center">
-          <h1 className="mb-4 font-heading text-4xl font-bold text-primary-foreground md:text-5xl">
-            {t("about.title")}
-          </h1>
-          <p className="text-lg text-primary-foreground/80">
-            {t("about.subtitle")}
-          </p>
-        </div>
-      </section>
+      <PageHeader title={t("about.title")} subtitle={t("about.subtitle")} />
 
       {/* About Content */}
-      <section className="bg-background py-24">
+      <section className="bg-primary-bg py-24">
         <div className="mx-auto max-w-7xl px-6">
           <div className="grid items-center gap-16 lg:grid-cols-2">
             {/* Image placeholder */}
@@ -97,7 +88,7 @@ export default function AboutPage() {
       </section>
 
       {/* Stats */}
-      <section className="bg-background py-24">
+      <section className="bg-primary-bg py-24">
         <div className="mx-auto max-w-7xl px-6">
           <div className="grid gap-8 text-center md:grid-cols-4">
             {[

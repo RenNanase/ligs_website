@@ -1,0 +1,16 @@
+run pm2 restart ecosystem.config.js
+run pm2 start ligs_website
+
+//klu mau tukar wrna bg di section page
+search for this code ->
+return (
+    <section className="bg-white py-16 sm:py-20">
+
+    //white - bg-white
+    //pastel green - bg-primary-bg
+
+
+To unhide the faq , change this line at the navbar.tsx to
+
+const SHOW_FAQ_MENU = true
+const SHOW_FAQ_MENU = false // Set to true to show Soalan Lazim in utility nav    

@@ -1,114 +1,148 @@
 "use client"
 
+import Link from "next/link"
+import { usePathname } from "next/navigation"
 import { useLanguage } from "@/lib/language-context"
 import { useDataStore } from "@/lib/data-store"
-import { Button } from "@/components/ui/button"
-import { FileText, Clock, ChevronRight, ExternalLink } from "lucide-react"
-
-function StatusBadge({ status, t }: { status: string; t: (key: string) => string }) {
-  const config: Record<string, { bg: string; text: string; dot: string }> = {
-    open: { bg: "bg-emerald-50", text: "text-emerald-700", dot: "bg-emerald-500" },
-    closed: { bg: "bg-muted", text: "text-muted-foreground", dot: "bg-muted-foreground" },
-    awarded: { bg: "bg-amber-50", text: "text-amber-700", dot: "bg-amber-500" },
-  }
-
-  const style = config[status] || config.closed
-
-  return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${style.bg} ${style.text}`}>
-      <span className={`h-1.5 w-1.5 rounded-full ${style.dot}`} />
-      {t(`tenders.status.${status}`)}
-    </span>
-  )
-}
+import { Clock, ChevronRight, FileText } from "lucide-react"
+import { useState } from "react"
+import { cn } from "@/lib/utils"
 
 export function TendersSection() {
   const { language, t } = useLanguage()
+  const pathname = usePathname()
   const { tenders } = useDataStore()
+  const [activeTab, setActiveTab] = useState<"open" | "closed">("open")
 
-  // Show open tenders first, then by closing date (soonest first), limit to 5
-  const sorted = [...tenders]
-    .sort((a, b) => {
-      const statusOrder: Record<string, number> = { open: 0, closed: 1, awarded: 2 }
-      const orderDiff = (statusOrder[a.status] ?? 1) - (statusOrder[b.status] ?? 1)
-      if (orderDiff !== 0) return orderDiff
-      return new Date(a.closingDate).getTime() - new Date(b.closingDate).getTime()
-    })
-    .slice(0, 5)
+  const isTendersPage = pathname === "/tenders"
+
+  // Open first, then by closing date (newest first)
+  const sortedBase = [...tenders].sort((a, b) => {
+    const statusOrder = { open: 0, closed: 1, awarded: 1 }
+    const aStatus = statusOrder[a.status as keyof typeof statusOrder] ?? 1
+    const bStatus = statusOrder[b.status as keyof typeof statusOrder] ?? 1
+    if (aStatus !== bStatus) return aStatus - bStatus
+    return new Date(b.closingDate).getTime() - new Date(a.closingDate).getTime()
+  })
+
+  // Filter by status: homepage shows only open (Dibuka); tenders page uses tab
+  const isClosed = (s: string) => s === "closed" || s === "awarded"
+  const filteredTenders = isTendersPage
+    ? sortedBase.filter((t) => (activeTab === "open" ? !isClosed(t.status) : isClosed(t.status)))
+    : sortedBase.filter((t) => !isClosed(t.status))
+  const sorted = isTendersPage ? filteredTenders : filteredTenders.slice(0, 5)
+
+  const hasOpen = tenders.some((t) => !isClosed(t.status))
+  const hasClosed = tenders.some((t) => isClosed(t.status))
 
   return (
-    <section className="bg-background py-20">
-      <div className="mx-auto max-w-7xl px-6">
-        {/* Header */}
-        <div className="mb-12 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end">
-          <div>
-            <div className="mb-3 flex items-center gap-2.5">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
-                <FileText className="h-4.5 w-4.5 text-primary" />
-              </div>
-              <h2 className="font-heading text-3xl font-bold text-foreground md:text-4xl">
-                {t("tenders.title")}
-              </h2>
+    <section className="bg-white py-12 sm:py-16 md:py-20">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6">
+        {/* Sticky mini menu - only on tenders page */}
+        {isTendersPage && (hasOpen || hasClosed) && (
+          <nav className="sticky top-0 z-20 mb-8 border-b border-border bg-primary-bg/95 py-3 backdrop-blur supports-[backdrop-filter]:bg-primary-bg/90 lg:mb-10">
+            <div className="flex gap-1">
+              {hasOpen && (
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("open")}
+                  className={cn(
+                    "rounded-lg px-4 py-2 text-sm font-medium transition-colors",
+                    activeTab === "open"
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:bg-accent/20 hover:text-accent"
+                  )}
+                >
+                  {t("tenders.tab.open")}
+                </button>
+              )}
+              {hasClosed && (
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("closed")}
+                  className={cn(
+                    "rounded-lg px-4 py-2 text-sm font-medium transition-colors",
+                    activeTab === "closed"
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:bg-accent/20 hover:text-accent"
+                  )}
+                >
+                  {t("tenders.tab.closed")}
+                </button>
+              )}
             </div>
-            <p className="max-w-lg text-base leading-relaxed text-muted-foreground">
-              {t("tenders.subtitle")}
-            </p>
+          </nav>
+        )}
+
+        {/* Header - hide on full tenders page (uses PageHeader instead) */}
+        {!isTendersPage && (
+          <div className="mb-8 text-center sm:mb-10 md:mb-12">
+            <h2 className="font-heading text-2xl font-bold text-foreground sm:text-3xl md:text-4xl">
+              {t("tenders.title")}
+            </h2>
           </div>
-          <Button
-            variant="outline"
-            className="gap-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground bg-transparent shrink-0"
-          >
-            {t("tenders.viewall")}
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
+        )}
 
         {/* Table for desktop, cards for mobile */}
-        {/* Desktop Table */}
-        <div className="hidden overflow-hidden rounded-xl border border-border md:block">
-          <table className="w-full">
+        {/* Empty state */}
+        {sorted.length === 0 ? (
+          <div className="rounded-xl border border-border bg-card px-6 py-12 text-center text-muted-foreground">
+            <FileText className="mx-auto mb-3 h-10 w-10 opacity-50" />
+            <p className="text-sm">{t("tenders.empty")}</p>
+          </div>
+        ) : (
+          <>
+        {/* Desktop Table - scrollable on smaller tablets */}
+        <div className="hidden overflow-x-auto overflow-y-visible rounded-xl border border-border bg-white md:block">
+          <table className="w-full min-w-[640px]">
             <thead>
               <tr className="border-b border-border bg-muted/50">
-                <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  {t("tenders.refno")}
+                <th className="w-12 border-r border-border px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  {t("jawatanKosong.bil")}
+                </th>
+                <th className="min-w-[12rem] px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  {language === "en" ? "Title" : "Tajuk"}
                 </th>
                 <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  {language === "en" ? "Title" : "Tajuk"}
+                  {t("tenders.opening")}
                 </th>
                 <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   {t("tenders.closing")}
                 </th>
-                <th className="px-5 py-3.5 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   {language === "en" ? "Status" : "Status"}
                 </th>
-                <th className="px-5 py-3.5 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  <span className="sr-only">Actions</span>
+                <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  {t("jawatanKosong.download")}
                 </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {sorted.map((tender) => {
+              {sorted.map((tender, index) => {
                 const title = language === "en" ? tender.title : tender.titleMs
-                const isOpen = tender.status === "open"
                 return (
                   <tr
                     key={tender.id}
-                    className="group transition-colors hover:bg-muted/30"
+                    className="group transition-colors"
                   >
-                    <td className="whitespace-nowrap px-5 py-4">
-                      <span className="font-mono text-xs font-medium text-muted-foreground">
-                        {tender.referenceNo}
-                      </span>
+                    <td className="border-r border-border whitespace-nowrap px-5 py-4 align-top text-muted-foreground">
+                      {index + 1}
                     </td>
-                    <td className="px-5 py-4">
-                      <p className="text-sm font-medium text-foreground leading-snug line-clamp-2 group-hover:text-primary transition-colors">
+                    <td className="min-w-[12rem] max-w-xl px-5 py-4 align-top">
+                      <p className="text-sm font-medium text-foreground leading-relaxed break-words whitespace-normal group-hover:text-accent transition-colors">
                         {title}
                       </p>
-                      <span className="mt-1 inline-block rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                        {tender.category}
-                      </span>
                     </td>
-                    <td className="whitespace-nowrap px-5 py-4">
+                    <td className="whitespace-nowrap px-5 py-4 align-top">
+                      <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                        <Clock className="h-3.5 w-3.5" />
+                        {new Date(tender.openingDate).toLocaleDateString(
+                          language === "en" ? "en-MY" : "ms-MY",
+                          { day: "numeric", month: "short", year: "numeric" }
+                        )}
+                      </div>
+                    </td>
+                    <td className="whitespace-nowrap px-5 py-4 align-top">
                       <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
                         <Clock className="h-3.5 w-3.5" />
                         {new Date(tender.closingDate).toLocaleDateString(
@@ -117,18 +151,24 @@ export function TendersSection() {
                         )}
                       </div>
                     </td>
-                    <td className="px-5 py-4 text-center">
-                      <StatusBadge status={tender.status} t={t} />
+                    <td className="whitespace-nowrap px-5 py-4 align-top">
+                      <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${tender.status === "open" ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700"}`}>
+                        {t(`tenders.status.${tender.status}`)}
+                      </span>
                     </td>
-                    <td className="px-5 py-4 text-right">
-                      {isOpen && (
-                        <button
-                          type="button"
-                          className="inline-flex items-center gap-1 text-xs font-semibold text-primary transition-colors hover:text-accent"
+                    <td className="whitespace-nowrap px-5 py-4 align-top">
+                      {tender.pdfUrl ? (
+                        <a
+                          href={tender.pdfUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 text-xs font-medium text-primary transition-colors hover:text-accent"
                         >
-                          {t("tenders.details")}
-                          <ExternalLink className="h-3 w-3" />
-                        </button>
+                          <FileText className="h-3.5 w-3.5" />
+                          {t("jawatanKosong.downloadPdf")}
+                        </a>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
                       )}
                     </td>
                   </tr>
@@ -138,43 +178,83 @@ export function TendersSection() {
           </table>
         </div>
 
-        {/* Mobile Cards */}
-        <div className="flex flex-col gap-3 md:hidden">
-          {sorted.map((tender) => {
-            const title = language === "en" ? tender.title : tender.titleMs
-            return (
-              <article
-                key={tender.id}
-                className="rounded-xl border border-border bg-card p-5 transition-all hover:border-primary/20 hover:shadow-sm"
-              >
-                <div className="mb-3 flex items-center justify-between">
-                  <span className="font-mono text-xs font-medium text-muted-foreground">
-                    {tender.referenceNo}
-                  </span>
-                  <StatusBadge status={tender.status} t={t} />
-                </div>
-                <h3 className="mb-2 text-sm font-semibold leading-snug text-card-foreground">
-                  {title}
+        {/* Mobile Cards - optimized for small screens */}
+        <div className="flex flex-col gap-4 md:hidden">
+          {sorted.map((tender) => (
+            <article
+              key={tender.id}
+              className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4 shadow-sm transition-shadow active:shadow-md sm:p-5"
+            >
+              {/* Title row */}
+              <div className="flex items-start justify-between gap-3">
+                <h3 className="min-w-0 flex-1 text-sm font-semibold leading-snug text-foreground">
+                  {language === "en" ? tender.title : tender.titleMs}
                 </h3>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <Clock className="h-3 w-3" />
-                    <span>{t("tenders.closing")}:</span>
+                <span
+                  className={`shrink-0 inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-semibold ${tender.status === "open" ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700"}`}
+                >
+                  {t(`tenders.status.${tender.status}`)}
+                </span>
+              </div>
+
+              {/* Dates - stacked on very small screens, side-by-side on wider */}
+              <div className="flex flex-col gap-2 sm:grid sm:grid-cols-2 sm:gap-x-4">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Clock className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                  <span>
+                    {t("tenders.opening")}:{" "}
+                    <time dateTime={tender.openingDate}>
+                      {new Date(tender.openingDate).toLocaleDateString(
+                        language === "en" ? "en-MY" : "ms-MY",
+                        { day: "numeric", month: "short", year: "2-digit" }
+                      )}
+                    </time>
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Clock className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                  <span>
+                    {t("tenders.closing")}:{" "}
                     <time dateTime={tender.closingDate}>
                       {new Date(tender.closingDate).toLocaleDateString(
                         language === "en" ? "en-MY" : "ms-MY",
-                        { day: "numeric", month: "short", year: "numeric" }
+                        { day: "numeric", month: "short", year: "2-digit" }
                       )}
                     </time>
-                  </div>
-                  <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                    {tender.category}
                   </span>
                 </div>
-              </article>
-            )
-          })}
+              </div>
+
+              {/* Download CTA - full width, touch-friendly */}
+              {tender.pdfUrl && (
+                <a
+                  href={tender.pdfUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-auto flex min-h-[44px] items-center justify-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-4 py-3 text-sm font-medium text-primary transition-colors hover:bg-accent/20 hover:text-accent active:bg-primary/15"
+                >
+                  <FileText className="h-4 w-4" />
+                  {t("jawatanKosong.downloadPdf")}
+                </a>
+              )}
+            </article>
+          ))}
         </div>
+
+        {/* View All CTA */}
+        {!isTendersPage && (
+          <div className="mt-6 flex justify-center sm:mt-8 sm:justify-end">
+            <Link
+              href="/tenders"
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-foreground transition-colors hover:text-accent"
+            >
+              {t("tenders.viewall")}
+              <ChevronRight className="h-4 w-4" />
+            </Link>
+          </div>
+        )}
+          </>
+        )}
       </div>
     </section>
   )

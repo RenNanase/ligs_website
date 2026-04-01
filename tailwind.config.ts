@@ -28,6 +28,7 @@ const config: Config = {
         primary: {
           DEFAULT: 'hsl(var(--primary))',
           foreground: 'hsl(var(--primary-foreground))',
+          bg: 'hsl(var(--bg-primary))',
         },
         secondary: {
           DEFAULT: 'hsl(var(--secondary))',
@@ -95,6 +96,6 @@ const config: Config = {
       },
     },
   },
-  plugins: [require('tailwindcss-animate')],
+  plugins: [require('tailwindcss-animate'), require('@tailwindcss/typography')],
 }
 export default config

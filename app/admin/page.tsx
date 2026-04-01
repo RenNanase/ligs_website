@@ -1,26 +1,50 @@
 "use client"
 
 import React from "react"
-
-import { useState } from "react"
+import Link from "next/link"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { signIn, useSession } from "next-auth/react"
 import { useLanguage } from "@/lib/language-context"
+import { getFirstAllowedModule } from "@/lib/permissions"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { PasswordInput } from "@/components/ui/password-input"
 import { Label } from "@/components/ui/label"
 import { Lock, Mail } from "lucide-react"
 
 export default function AdminLoginPage() {
   const { t } = useLanguage()
   const router = useRouter()
-  const { status } = useSession()
+  const { data: session, status } = useSession()
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
 
-  // Redirect if already authenticated
-  if (status === "authenticated") {
-    router.push("/admin/dashboard")
+  const user = session?.user as { role?: string; allowedModules?: string[] | null } | undefined
+
+  // Redirect if already authenticated to first allowed module
+  useEffect(() => {
+    if (status === "authenticated" && user) {
+      const first = getFirstAllowedModule(user.role ?? "admin", user.allowedModules ?? null)
+      if (first) router.push(`/admin/${first}`)
+    }
+  }, [status, router, user?.role, user?.allowedModules])
+
+  // Authenticated with no modules: show message (no redirect loop)
+  if (status === "authenticated" && user) {
+    const first = getFirstAllowedModule(user.role ?? "admin", user.allowedModules ?? null)
+    if (!first) {
+      return (
+        <div className="flex min-h-screen items-center justify-center bg-white px-6">
+          <div className="w-full max-w-md rounded-xl border border-gray-200 bg-white p-8 shadow-lg text-center">
+            <p className="text-muted-foreground mb-4">No modules assigned. Contact administrator.</p>
+            <Link href="/api/auth/signout">
+              <Button variant="outline">Sign out</Button>
+            </Link>
+          </div>
+        </div>
+      )
+    }
     return null
   }
 
@@ -41,15 +65,14 @@ export default function AdminLoginPage() {
 
     if (result?.error) {
       setError("Invalid credentials. Please try again.")
-      setLoading(false)
-    } else {
-      router.push("/admin/dashboard")
     }
+    setLoading(false)
+    // Success: session updates async; useEffect will redirect to first allowed module
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-secondary px-6">
-      <div className="w-full max-w-md rounded-xl border border-border bg-card p-8 shadow-lg">
+    <div className="flex min-h-screen items-center justify-center bg-white px-6">
+      <div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-8 shadow-lg">
         <div className="mb-8 text-center">
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
             <Lock className="h-7 w-7 text-primary" />
@@ -57,9 +80,7 @@ export default function AdminLoginPage() {
           <h1 className="font-heading text-2xl font-bold text-card-foreground">
             {t("admin.login")}
           </h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            CorpSite Administration
-          </p>
+          
         </div>
 
         {error && (
@@ -80,7 +101,7 @@ export default function AdminLoginPage() {
                 name="email"
                 type="email"
                 required
-                placeholder="admin@corpsite.com"
+                placeholder="admin@ligs.com"
                 className="bg-background pl-10"
               />
             </div>
@@ -90,11 +111,10 @@ export default function AdminLoginPage() {
               {t("admin.password")}
             </Label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
+              <Lock className="absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <PasswordInput
                 id="password"
                 name="password"
-                type="password"
                 required
                 placeholder="********"
                 className="bg-background pl-10"
@@ -105,14 +125,20 @@ export default function AdminLoginPage() {
             type="submit"
             size="lg"
             disabled={loading}
-            className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-semibold"
+            className="w-full bg-primary text-primary-foreground hover:bg-accent hover:text-accent-foreground font-semibold"
           >
             {loading ? "Signing in..." : t("admin.signin")}
           </Button>
         </form>
 
-        <p className="mt-6 text-center text-xs text-muted-foreground">
-          Demo: admin@corpsite.com / admin123
+        
+        <p className="mt-5 text-center">
+          <Link
+            href="/"
+            className="text-xs text-muted-foreground transition-colors hover:text-accent underline underline-offset-2"
+          >
+            {t("admin.backToWebsite")}
+          </Link>
         </p>
       </div>
     </div>

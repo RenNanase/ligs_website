@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma"
 import { NextResponse } from "next/server"
 import { requireAuth } from "@/lib/auth"
+import { updateLastUpdated } from "@/lib/update-last-updated"
 
 export async function GET() {
   const landing = await prisma.landingContent.findFirst({
@@ -43,5 +44,6 @@ export async function PUT(request: Request) {
     },
     include: { highlights: { orderBy: { sortOrder: "asc" } } },
   })
+  await updateLastUpdated()
   return NextResponse.json(updated)
 }

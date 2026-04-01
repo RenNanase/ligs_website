@@ -9,12 +9,17 @@ import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Plus, Trash2, Save, GripVertical } from "lucide-react"
 import { ImageUpload } from "@/components/ui/image-upload"
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 
 export default function AdminBannersPage() {
   const { t } = useLanguage()
   const { banners, saveBanners } = useDataStore()
   const [form, setForm] = useState<BannerSlide[]>(banners)
+
+  // Sync form with banners when data loads from API (fixes images not showing after DB has saved images)
+  useEffect(() => {
+    setForm(banners)
+  }, [banners])
   const [saved, setSaved] = useState(false)
 
   const handleSave = async () => {
@@ -23,20 +28,24 @@ export default function AdminBannersPage() {
     setTimeout(() => setSaved(false), 2000)
   }
 
+  const firstCardRef = useRef<HTMLDivElement>(null)
+
   const addBanner = () => {
     if (form.length >= 10) return
     const newBanner: BannerSlide = {
       id: Date.now().toString(),
       image: "",
       title: "New Banner",
-      titleMs: "Sepanduk Baru",
+      titleMs: "Banner Baru",
       caption: "Banner description goes here.",
-      captionMs: "Penerangan sepanduk di sini.",
+      captionMs: "Penerangan banner di sini.",
       ctaText: "Learn More",
       ctaTextMs: "Ketahui Lebih",
       ctaLink: "/about",
     }
-    setForm([...form, newBanner])
+    setForm([newBanner, ...form])
+    // Scroll to top so admin sees the new banner immediately
+    setTimeout(() => firstCardRef.current?.scrollIntoView({ behavior: "smooth" }), 0)
   }
 
   const removeBanner = (index: number) => {
@@ -63,7 +72,7 @@ export default function AdminBannersPage() {
         <Button
           onClick={addBanner}
           disabled={form.length >= 10}
-          className="bg-primary text-primary-foreground hover:bg-primary/90 gap-2"
+          className="bg-primary text-primary-foreground hover:bg-accent hover:text-accent-foreground gap-2"
         >
           <Plus className="h-4 w-4" />
           {t("admin.add")}
@@ -74,6 +83,7 @@ export default function AdminBannersPage() {
         {form.map((banner, index) => (
           <div
             key={banner.id}
+            ref={index === 0 ? firstCardRef : undefined}
             className="rounded-xl border border-border bg-card p-6"
           >
             <div className="mb-4 flex items-center justify-between">
@@ -102,6 +112,8 @@ export default function AdminBannersPage() {
                   label="Image"
                   value={banner.image}
                   onChange={(url) => updateBanner(index, "image", url)}
+                  uploadPath="/api/upload"
+                  maxSize={10 * 1024 * 1024}
                   aspectRatio="banner"
                 />
               </div>
@@ -193,7 +205,7 @@ export default function AdminBannersPage() {
       <div className="mt-8 flex items-center gap-4">
         <Button
           onClick={handleSave}
-          className="bg-primary text-primary-foreground hover:bg-primary/90 gap-2"
+          className="bg-primary text-primary-foreground hover:bg-accent hover:text-accent-foreground gap-2"
         >
           <Save className="h-4 w-4" />
           {t("admin.save")}

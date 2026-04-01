@@ -1,16 +1,15 @@
 "use client"
 
 import React from "react"
-
 import { useLanguage } from "@/lib/language-context"
 import { useDataStore } from "@/lib/data-store"
 import { useEffect, useRef, useState } from "react"
-import { Users, Droplets, TreePine } from "lucide-react"
+import { User, Hexagon, UserCog } from "lucide-react"
 
-const iconMap: Record<string, React.ElementType> = {
-  "stats.pekebun": Users,
-  "stats.penoreh": Droplets,
-  "stats.keluasan": TreePine,
+const STAT_ICONS: Record<string, { Icon: React.ComponentType<{ className?: string; size?: number }>; iconClass: string }> = {
+  "stats.pekebun": { Icon: User, iconClass: "text-blue-500" },
+  "stats.keluasan": { Icon: Hexagon, iconClass: "text-green-700" },
+  "stats.penoreh": { Icon: UserCog, iconClass: "text-amber-500" },
 }
 
 function AnimatedCounter({ target, suffix, isVisible }: { target: number; suffix: string; isVisible: boolean }) {
@@ -71,35 +70,29 @@ export function StatisticsSection() {
   }, [])
 
   return (
-    <section ref={sectionRef} className="bg-card py-20">
-      <div className="mx-auto max-w-7xl px-6">
-        <div className="mb-14 text-center">
-          <h2 className="mb-3 font-heading text-3xl font-bold text-card-foreground md:text-4xl">
-            {t("stats.title")}
-          </h2>
-          <p className="mx-auto max-w-xl text-base leading-relaxed text-muted-foreground">
-            {t("stats.subtitle")}
-          </p>
-        </div>
-
-        <div className="grid gap-8 md:grid-cols-3">
-          {stats.map((stat) => {
-            const Icon = iconMap[stat.labelKey] || Users
+    <section ref={sectionRef} className="bg-primary py-6 sm:py-8">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6">
+        <div className="flex flex-wrap justify-center gap-6 sm:gap-8 md:gap-12">
+          {stats.map((stat, index) => {
+            const config = STAT_ICONS[stat.labelKey] ?? { Icon: User, iconClass: "text-primary-foreground/80" }
+            const { Icon, iconClass } = config
             return (
-              <div
-                key={stat.id}
-                className="group flex flex-col items-center rounded-2xl border border-border bg-background p-10 text-center transition-all hover:border-primary/30 hover:shadow-lg"
-              >
-                <div className="mb-5 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 transition-colors group-hover:bg-primary/15">
-                  <Icon className="h-8 w-8 text-primary" />
+              <React.Fragment key={stat.id}>
+                {index > 0 && (
+                  <div className="hidden w-px self-stretch bg-primary-foreground/20 sm:block" aria-hidden />
+                )}
+                <div className="flex min-w-0 flex-1 basis-0 flex-col items-center text-center">
+                  <div className={`mb-2 flex h-6 w-6 shrink-0 items-center justify-center ${iconClass}`} aria-hidden>
+                    <Icon size={24} strokeWidth={stat.labelKey === "stats.keluasan" ? 1.5 : 2.5} />
+                  </div>
+                  <p className="font-heading text-xl font-bold text-primary-foreground sm:text-2xl md:text-3xl">
+                    <AnimatedCounter target={stat.value} suffix={stat.suffix} isVisible={isVisible} />
+                  </p>
+                  <p className="mt-1 text-[10px] font-medium uppercase tracking-wider text-primary-foreground/70 sm:text-xs">
+                    {t(stat.labelKey)}
+                  </p>
                 </div>
-                <p className="mb-2 font-heading text-4xl font-bold text-foreground md:text-5xl">
-                  <AnimatedCounter target={stat.value} suffix={stat.suffix} isVisible={isVisible} />
-                </p>
-                <p className="text-sm font-medium uppercase tracking-wider text-muted-foreground">
-                  {t(stat.labelKey)}
-                </p>
-              </div>
+              </React.Fragment>
             )
           })}
         </div>

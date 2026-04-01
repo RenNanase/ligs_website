@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma"
 import { NextResponse } from "next/server"
+import { revalidateTag, revalidatePath } from "next/cache"
 import { requireAuth } from "@/lib/auth"
+import { updateLastUpdated } from "@/lib/update-last-updated"
 
 export async function GET(
   _request: Request,
@@ -26,6 +28,9 @@ export async function PUT(
     where: { id },
     data,
   })
+  await updateLastUpdated()
+  revalidateTag("initial-data", { expire: 0 })
+  revalidatePath("/")
   return NextResponse.json(banner)
 }
 
@@ -38,5 +43,8 @@ export async function DELETE(
 
   const { id } = await params
   await prisma.bannerSlide.delete({ where: { id } })
+  await updateLastUpdated()
+  revalidateTag("initial-data", { expire: 0 })
+  revalidatePath("/")
   return NextResponse.json({ success: true })
 }

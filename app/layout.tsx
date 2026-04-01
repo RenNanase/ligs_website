@@ -4,6 +4,8 @@ import { Inter, DM_Sans } from "next/font/google"
 
 import "./globals.css"
 import { ClientProviders } from "@/components/client-providers"
+import { getThemeInitStyle } from "@/lib/theme-init-script"
+import { fetchInitialData } from "@/lib/fetch-initial-data"
 
 const _inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
 const _dmSans = DM_Sans({
@@ -12,25 +14,46 @@ const _dmSans = DM_Sans({
 })
 
 export const metadata: Metadata = {
-  title: "CorpSite - Building the Future Together",
+  title: "Portal Rasmi Lembaga Industri Getah Sabah",
   description:
-    "We deliver innovative solutions that transform businesses and drive sustainable growth across industries.",
+    "Industri Getah Yang Moden Berdaya Maju Dan Dinamik",
 }
 
 export const viewport: Viewport = {
   themeColor: "#40826D",
 }
 
-export default function RootLayout({
+// Always fetch fresh data from DB on each request (no static pre-render)
+export const dynamic = "force-dynamic"
+
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const initialData = await fetchInitialData()
+  const themeCss = getThemeInitStyle(initialData.themeId)
+
   return (
-    <html lang="en" className={`${_inter.variable} ${_dmSans.variable}`}>
+    <html
+      lang="en"
+      className={`${_inter.variable} ${_dmSans.variable}`}
+      suppressHydrationWarning
+      data-scroll-behavior="smooth"
+    >
+      <head>
+        {themeCss ? (
+          <style
+            id="theme-init"
+            dangerouslySetInnerHTML={{ __html: themeCss }}
+            suppressHydrationWarning
+          />
+        ) : null}
+      </head>
       <body className="font-sans antialiased">
-        <ClientProviders>{children}</ClientProviders>
+        <ClientProviders initialData={initialData}>{children}</ClientProviders>
       </body>
     </html>
   )
 }
+

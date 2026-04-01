@@ -18,6 +18,7 @@
     --popover-foreground: 160 33% 15%;
     --primary: 160 34% 32%;
     --primary-foreground: 0 0% 100%;
+    --bg-primary: 160 25% 95%;
     --secondary: 24 100% 97%;
     --secondary-foreground: 160 33% 15%;
     --muted: 24 30% 93%;
@@ -53,6 +54,7 @@
     --popover-foreground: 24 100% 97%;
     --primary: 160 34% 42%;
     --primary-foreground: 0 0% 100%;
+    --bg-primary: 160 25% 12%;
     --secondary: 160 20% 16%;
     --secondary-foreground: 24 100% 97%;
     --muted: 160 20% 16%;
@@ -91,4 +93,94 @@
 
 html {
   scroll-behavior: smooth;
+  /* Font scaling: respects user preference and a11y scale (80%–200%) */
+  font-size: calc(100% * var(--a11y-font-scale, 1));
+}
+
+/* Color blindness simulation - applied to main content only so the a11y menu stays visible */
+.a11y-filtered-content {
+  filter: var(--a11y-color-filter, none);
+  /* Ensure filter creates proper stacking; menu is sibling outside this div */
+  min-height: 100vh;
+}
+
+/* High contrast mode - WCAG AAA-like overrides */
+[data-high-contrast="true"] {
+  --background: 0 0% 100%;
+  --foreground: 0 0% 0%;
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 0%;
+  --primary: 0 0% 0%;
+  --primary-foreground: 0 0% 100%;
+  --muted: 0 0% 96%;
+  --muted-foreground: 0 0% 30%;
+  --accent: 0 0% 0%;
+  --accent-foreground: 0 0% 100%;
+  --border: 0 0% 20%;
+  --input: 0 0% 20%;
+  --ring: 0 0% 0%;
+}
+
+[data-high-contrast="true"].dark {
+  --background: 0 0% 0%;
+  --foreground: 0 0% 100%;
+  --card: 0 0% 0%;
+  --card-foreground: 0 0% 100%;
+  --primary: 0 0% 100%;
+  --primary-foreground: 0 0% 0%;
+  --muted: 0 0% 15%;
+  --muted-foreground: 0 0% 80%;
+  --accent: 0 0% 100%;
+  --accent-foreground: 0 0% 0%;
+  --border: 0 0% 60%;
+  --input: 0 0% 60%;
+  --ring: 0 0% 100%;
+}
+
+/* Visible focus indicators for keyboard navigation (WCAG 2.4.7) */
+:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+}
+
+/* Links: non-color identification - underline on focus (WCAG 1.4.1) */
+a[href]:focus-visible {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+/* Touch targets: ensure nav links and icon buttons meet 44×44px minimum (WCAG 2.5.5) */
+@media (max-width: 768px) {
+  nav a,
+  nav button,
+  [role="button"] {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 0.5rem;
+  }
+}
+
+/* Rich text editor: restore list styles (Tailwind preflight strips them) */
+[data-rich-editor] .ProseMirror ul,
+.ProseMirror ul {
+  list-style-type: disc;
+  padding-left: 1.5rem;
+  margin: 0.5em 0;
+}
+[data-rich-editor] .ProseMirror ol,
+.ProseMirror ol {
+  list-style-type: decimal;
+  padding-left: 1.5rem;
+  margin: 0.5em 0;
+}
+[data-rich-editor] .ProseMirror li,
+.ProseMirror li {
+  display: list-item;
+  margin: 0.25em 0;
+}
+
+/* Preserve spaces in rich content when displayed on frontend (HTML collapses them by default) */
+.prose.prose-preserve-spaces,
+.rich-content-display {
+  white-space: pre-wrap;
 }

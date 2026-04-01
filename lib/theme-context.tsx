@@ -1,6 +1,7 @@
 "use client"
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react"
+import { THEME_STORAGE_KEY } from "@/lib/theme-init-script"
 
 export const themes = [
   {
@@ -9,6 +10,7 @@ export const themes = [
     primary: "#40826D",
     accent: "#F0531C",
     bg: "#FFF5EE",
+    bgPrimary: "#E8F3EF",
   },
   {
     id: "ocean",
@@ -16,20 +18,23 @@ export const themes = [
     primary: "#2563EB",
     accent: "#F97316",
     bg: "#F0F9FF",
+    bgPrimary: "#EFF6FF",
   },
   {
     id: "royal",
     name: "Royal Navy",
-    primary: "#1E3A5F",
-    accent: "#E63946",
-    bg: "#F8FAFC",
+    primary: "#213745",
+    accent: "#ff5b8e",
+    bg: "#ead9c9",
+    bgPrimary: "#E8EEF2",
   },
   {
-    id: "earth",
-    name: "Earth Tone",
-    primary: "#8B5E3C",
-    accent: "#D4A574",
-    bg: "#FDF6EC",
+    id: "forest",
+    name: "Forest Tone",
+    primary: "#014421",
+    accent: "#e4af2b",
+    bg: "#f6e9d9",
+    bgPrimary: "#E6F0EA",
   },
   {
     id: "avocado",
@@ -37,18 +42,18 @@ export const themes = [
     primary: "#558700",
     accent: "#f05010",
     bg: "#fffae1",
+    bgPrimary: "#F0F7E6",
   },
   {
     id: "evergreen",
     name: "Evergreen",
-    primary: "#003400",
-    accent: "#fda400",
+    primary: "#05503c",
+    accent: "#fdca00",
     bg: "#Fcfff1",
+    bgPrimary: "#fffff",
   },
 ]
-
-const THEME_STORAGE_KEY = "ligs_admin_theme"
-
+ 
 function hexToHsl(hex: string): string {
   const r = Number.parseInt(hex.slice(1, 3), 16) / 255
   const g = Number.parseInt(hex.slice(3, 5), 16) / 255
@@ -82,7 +87,6 @@ function hexToHsl(hex: string): string {
 function applyCssVariables(theme: (typeof themes)[0]) {
   const root = document.documentElement
   if (theme.id === "default") {
-    // Remove overrides so the CSS defaults in globals.css take effect
     root.style.removeProperty("--primary")
     root.style.removeProperty("--accent")
     root.style.removeProperty("--background")
@@ -90,6 +94,7 @@ function applyCssVariables(theme: (typeof themes)[0]) {
     root.style.removeProperty("--ring")
     root.style.removeProperty("--sidebar-background")
     root.style.removeProperty("--sidebar-primary")
+    root.style.removeProperty("--bg-primary")
   } else {
     root.style.setProperty("--primary", hexToHsl(theme.primary))
     root.style.setProperty("--accent", hexToHsl(theme.accent))
@@ -98,44 +103,74 @@ function applyCssVariables(theme: (typeof themes)[0]) {
     root.style.setProperty("--ring", hexToHsl(theme.primary))
     root.style.setProperty("--sidebar-background", hexToHsl(theme.primary))
     root.style.setProperty("--sidebar-primary", hexToHsl(theme.accent))
+    root.style.setProperty("--bg-primary", hexToHsl(theme.bgPrimary))
   }
 }
 
 interface ThemeContextValue {
   activeTheme: string
-  setTheme: (themeId: string) => void
+  setTheme: (themeId: string) => Promise<void>
 }
 
 const ThemeContext = createContext<ThemeContextValue>({
   activeTheme: "default",
-  setTheme: () => {},
+  setTheme: async () => {},
 })
 
 export function useTheme() {
   return useContext(ThemeContext)
 }
 
-export function AdminThemeProvider({ children }: { children: ReactNode }) {
+export function ThemeProvider({ children }: { children: ReactNode }) {
   const [activeTheme, setActiveTheme] = useState("default")
 
-  // Load saved theme from localStorage on mount and apply it
+  // Load saved theme from database on mount; localStorage already applied by inline script
   useEffect(() => {
-    const saved = localStorage.getItem(THEME_STORAGE_KEY)
-    if (saved) {
-      const theme = themes.find((t) => t.id === saved)
-      if (theme) {
-        setActiveTheme(theme.id)
-        applyCssVariables(theme)
-      }
-    }
+    fetch("/api/settings")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.themeId) {
+          const theme = themes.find((t) => t.id === data.themeId)
+          if (theme) {
+            setActiveTheme(theme.id)
+            applyCssVariables(theme)
+            try {
+              localStorage.setItem(THEME_STORAGE_KEY, theme.id)
+            } catch {
+              /* ignore */
+            }
+          }
+        }
+      })
+      .catch(() => {})
   }, [])
 
-  const setTheme = (themeId: string) => {
+  const setTheme = async (themeId: string) => {
     const theme = themes.find((t) => t.id === themeId)
     if (!theme) return
+
+    // Apply immediately for instant feedback
     setActiveTheme(theme.id)
-    localStorage.setItem(THEME_STORAGE_KEY, theme.id)
     applyCssVariables(theme)
+    try {
+      localStorage.setItem(THEME_STORAGE_KEY, theme.id)
+    } catch {
+      /* ignore */
+    }
+
+    // Persist to database
+    try {
+      const res = await fetch("/api/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ themeId }),
+      })
+      if (!res.ok) {
+        console.error("Failed to save theme:", res.status, await res.text())
+      }
+    } catch (err) {
+      console.error("Failed to save theme:", err)
+    }
   }
 
   return (
@@ -144,3 +179,6 @@ export function AdminThemeProvider({ children }: { children: ReactNode }) {
     </ThemeContext.Provider>
   )
 }
+
+/** @deprecated Use ThemeProvider instead */
+export const AdminThemeProvider = ThemeProvider

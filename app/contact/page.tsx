@@ -1,183 +1,109 @@
 "use client"
 
 import React from "react"
+import dynamic from "next/dynamic"
 
 import { useLanguage } from "@/lib/language-context"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Label } from "@/components/ui/label"
-import { Mail, Phone, MapPin, Clock, Send } from "lucide-react"
-import { useState } from "react"
+import { PageHeader } from "@/components/sections/page-header"
+
+const ContactMap = dynamic(() => import("@/components/contact-map").then((m) => m.ContactMap), {
+  ssr: false,
+  loading: () => (
+    <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+      <div className="mb-4 h-6 w-48 animate-pulse rounded bg-muted" />
+      <div className="flex h-[300px] w-full items-center justify-center rounded-xl border border-border bg-muted/30 sm:h-[400px]">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      </div>
+    </div>
+  ),
+})
 
 export default function ContactPage() {
-  const { language, t } = useLanguage()
-  const [submitted, setSubmitted] = useState(false)
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    setSubmitted(true)
-    setTimeout(() => setSubmitted(false), 3000)
-  }
+  const { t } = useLanguage()
 
   return (
     <>
-      {/* Page Header */}
-      <section className="bg-primary py-20">
-        <div className="mx-auto max-w-7xl px-6 text-center">
-          <h1 className="mb-4 font-heading text-4xl font-bold text-primary-foreground md:text-5xl">
-            {t("contact.title")}
-          </h1>
-          <p className="text-lg text-primary-foreground/80">
-            {t("contact.subtitle")}
-          </p>
-        </div>
-      </section>
+      <PageHeader title={t("contact.title")} />
 
-      {/* Contact Content */}
-      <section className="bg-background py-24">
+      <section className="bg-primary-bg py-24">
         <div className="mx-auto max-w-7xl px-6">
-          <div className="grid gap-16 lg:grid-cols-2">
-            {/* Contact Form */}
-            <div className="rounded-xl border border-border bg-card p-8">
-              {submitted ? (
-                <div className="flex min-h-[400px] flex-col items-center justify-center text-center">
-                  <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-                    <Send className="h-8 w-8 text-primary" />
-                  </div>
-                  <h3 className="mb-2 font-heading text-2xl font-semibold text-card-foreground">
-                    {language === "en" ? "Message Sent!" : "Mesej Dihantar!"}
-                  </h3>
-                  <p className="text-muted-foreground">
-                    {language === "en"
-                      ? "Thank you for reaching out. We'll get back to you soon."
-                      : "Terima kasih kerana menghubungi kami. Kami akan menghubungi anda segera."}
+          {/* Map and LIGS address side by side */}
+          <div className="grid gap-8 lg:grid-cols-2 lg:gap-16 lg:items-center">
+            <p className="sr-only" id="contact-map-alt">
+              {t("contact.addressText")}
+            </p>
+            <ContactMap />
+
+            <div className="flex flex-col items-center justify-center text-center">
+              <address className="not-italic text-base leading-relaxed text-muted-foreground">
+                <p className="font-semibold text-foreground">LEMBAGA INDUSTRI GETAH SABAH</p>
+                <p className="mt-4">Aras 3, Wisma Pertanian Sabah</p>
+                <p>Jalan Tasik, Luyang (Off Jalan Maktab Gaya)</p>
+                <p>Beg Berkunci 2016</p>
+                <p>88999 Kota Kinabalu, Sabah</p>
+                <div className="mt-6 space-y-2">
+                  <p>Tel: 088-212311, 210531, 210472</p>
+                  <p>Faks: 088-234940, 268586</p>
+                  <p>
+                    Emel:{" "}
+                    <a
+                      href="mailto:gm.getah@sabah.gov.my"
+                      className="text-primary transition-colors hover:text-accent hover:underline focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded"
+                    >
+                      gm.getah@sabah.gov.my
+                    </a>
                   </p>
                 </div>
-              ) : (
-                <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-                  <div>
-                    <Label htmlFor="name" className="mb-2 block text-sm font-medium text-card-foreground">
-                      {t("contact.name")}
-                    </Label>
-                    <Input
-                      id="name"
-                      required
-                      placeholder={language === "en" ? "John Doe" : "Ahmad bin Ali"}
-                      className="bg-background"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="email" className="mb-2 block text-sm font-medium text-card-foreground">
-                      {t("contact.email")}
-                    </Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      required
-                      placeholder="email@example.com"
-                      className="bg-background"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="subject" className="mb-2 block text-sm font-medium text-card-foreground">
-                      {t("contact.subject")}
-                    </Label>
-                    <Input
-                      id="subject"
-                      required
-                      placeholder={
-                        language === "en"
-                          ? "How can we help?"
-                          : "Bagaimana kami boleh membantu?"
-                      }
-                      className="bg-background"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="message" className="mb-2 block text-sm font-medium text-card-foreground">
-                      {t("contact.message")}
-                    </Label>
-                    <Textarea
-                      id="message"
-                      required
-                      rows={5}
-                      placeholder={
-                        language === "en"
-                          ? "Tell us about your project..."
-                          : "Ceritakan tentang projek anda..."
-                      }
-                      className="bg-background"
-                    />
-                  </div>
-                  <Button
-                    type="submit"
-                    size="lg"
-                    className="w-full bg-accent text-accent-foreground hover:bg-accent/90 gap-2 font-semibold"
-                  >
-                    <Send className="h-4 w-4" />
-                    {t("contact.send")}
-                  </Button>
-                </form>
-              )}
+              </address>
             </div>
+          </div>
 
-            {/* Contact Info */}
-            <div className="flex flex-col gap-8">
-              <div>
-                <h2 className="mb-6 font-heading text-2xl font-bold text-foreground">
-                  {language === "en" ? "Get in Touch" : "Hubungi Kami"}
-                </h2>
-                <p className="leading-relaxed text-muted-foreground">
-                  {language === "en"
-                    ? "Have a question or want to work together? Fill out the form or reach us through the contact details below."
-                    : "Ada soalan atau ingin bekerjasama? Isi borang atau hubungi kami melalui maklumat hubungan di bawah."}
-                </p>
-              </div>
+          {/* Divider */}
+          <div className="mt-16 border-t border-border" />
 
-              <div className="flex flex-col gap-6">
-                {[
-                  {
-                    icon: MapPin,
-                    label: t("contact.address"),
-                    value: "Level 12, Menara Corporate, Jalan Sultan Ismail, 50250 Kuala Lumpur, Malaysia",
-                  },
-                  {
-                    icon: Phone,
-                    label: t("contact.phone"),
-                    value: "+60 3-1234 5678",
-                  },
-                  {
-                    icon: Mail,
-                    label: t("contact.email"),
-                    value: "info@corpsite.com",
-                  },
-                  {
-                    icon: Clock,
-                    label: language === "en" ? "Business Hours" : "Waktu Perniagaan",
-                    value:
-                      language === "en"
-                        ? "Mon - Fri: 9:00 AM - 6:00 PM"
-                        : "Isn - Jum: 9:00 PG - 6:00 PTG",
-                  },
-                ].map((item) => {
-                  const Icon = item.icon
-                  return (
-                    <div
-                      key={item.label}
-                      className="flex items-start gap-4 rounded-lg border border-border bg-card p-5"
-                    >
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-                        <Icon className="h-5 w-5 text-primary" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-card-foreground">{item.label}</p>
-                        <p className="text-sm text-muted-foreground">{item.value}</p>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
+          {/* Anak Syarikat LIGS — subsidiary addresses */}
+          <div className="mt-20">
+            <h2 className="mb-10 text-center font-heading text-2xl font-semibold text-foreground sm:text-3xl">
+              {t("contact.anakSyarikat")}
+            </h2>
+            <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-3">
+              <address className="not-italic text-sm leading-relaxed text-muted-foreground rounded-lg border border-border/50 bg-muted/20 p-6 transition-colors hover:bg-accent/20">
+                <p className="font-semibold text-foreground">KILANG GETAH SMR TUARAN</p>
+                <p className="mt-2">Peti Surat 33,</p>
+                <p>89207 Tuaran, Sabah</p>
+                <div className="mt-3 space-y-1">
+                  <p>Tel: 088-788766 / 788767</p>
+                  <p>Faks: 087-788729</p>
+                </div>
+              </address>
+              <address className="not-italic text-sm leading-relaxed text-muted-foreground rounded-lg border border-border/50 bg-muted/20 p-6 transition-colors hover:bg-accent/20">
+                <p className="font-semibold text-foreground">KILANG GETAH SMR TENOM</p>
+                <p className="mt-2">Peti Surat 13,</p>
+                <p>89907 Tenom, Sabah</p>
+                <div className="mt-3 space-y-1">
+                  <p>Tel: 087-735542</p>
+                  <p>Faks: 087-736057</p>
+                </div>
+              </address>
+              <address className="not-italic text-sm leading-relaxed text-muted-foreground sm:col-span-2 lg:col-span-1 rounded-lg border border-border/50 bg-muted/20 p-6 transition-colors hover:bg-accent/20">
+                <p className="font-semibold text-foreground">BEAUFORT LATEX SDN. BHD.</p>
+                <p className="mt-2">KM6, Jln Gadong, Kg. Kelabu,</p>
+                <p>Peti Surat 718,</p>
+                <p>89808 Beaufort, Sabah</p>
+                <div className="mt-3 space-y-1">
+                  <p>Tel: 087-735542</p>
+                  <p>Faks: 087-7366057</p>
+                </div>
+              </address>
+              <address className="not-italic text-sm leading-relaxed text-muted-foreground rounded-lg border border-border/50 bg-muted/20 p-6 transition-colors hover:bg-accent/20">
+                <p className="font-semibold text-foreground">LIGS SOLUTION SDN BHD</p>
+                <p className="mt-2">G25, Jln Tun Razak,</p>
+                <p>88000 Kota Kinabalu, Sabah</p>
+                <div className="mt-3 space-y-1">
+                  <p>Tel: TBA</p>
+                  <p>Faks: TBA</p>
+                </div>
+              </address>
             </div>
           </div>
         </div>

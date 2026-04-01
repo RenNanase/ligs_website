@@ -3,12 +3,22 @@
 import { AdminLayout } from "@/components/admin-layout"
 import { useLanguage } from "@/lib/language-context"
 import { useDataStore } from "@/lib/data-store"
-import { Newspaper, Users, Eye, ImageIcon, Megaphone, FileText } from "lucide-react"
+import { api } from "@/lib/api-client"
+import { Newspaper, ImageIcon, Megaphone, FileText, BarChart3, MessageSquare } from "lucide-react"
 import Link from "next/link"
+import { useState, useEffect } from "react"
 
 export default function AdminDashboardPage() {
   const { t } = useLanguage()
-  const { news, team, banners, announcements, tenders } = useDataStore()
+  const { news, banners, announcements, tenders } = useDataStore()
+  const [feedbackCount, setFeedbackCount] = useState<number | null>(null)
+
+  useEffect(() => {
+    api
+      .getFeedbackCount()
+      .then((r) => setFeedbackCount(r.count))
+      .catch(() => setFeedbackCount(null))
+  }, [])
 
   const stats = [
     {
@@ -16,6 +26,12 @@ export default function AdminDashboardPage() {
       value: banners.length,
       icon: ImageIcon,
       href: "/admin/banners",
+    },
+    {
+      label: t("admin.manage.stats"),
+      value: "—",
+      icon: BarChart3,
+      href: "/admin/stats",
     },
     {
       label: t("admin.manage.news"),
@@ -36,16 +52,10 @@ export default function AdminDashboardPage() {
       href: "/admin/tenders",
     },
     {
-      label: t("admin.manage.team"),
-      value: team.length,
-      icon: Users,
-      href: "/admin/team",
-    },
-    {
-      label: "Site Views",
-      value: "1,245",
-      icon: Eye,
-      href: "#",
+      label: t("admin.manage.feedback"),
+      value: feedbackCount ?? "—",
+      icon: MessageSquare,
+      href: "/admin/feedback",
     },
   ]
 
@@ -55,9 +65,7 @@ export default function AdminDashboardPage() {
         <h1 className="font-heading text-3xl font-bold text-foreground">
           {t("admin.dashboard")}
         </h1>
-        <p className="mt-1 text-muted-foreground">
-          Welcome to the CorpSite administration panel.
-        </p>
+       
       </div>
 
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -65,7 +73,7 @@ export default function AdminDashboardPage() {
           const Icon = stat.icon
           return (
             <Link key={stat.label} href={stat.href}>
-              <div className="rounded-xl border border-border bg-card p-6 transition-all hover:border-primary/30 hover:shadow-md">
+              <div className="rounded-xl border border-border bg-card p-6 transition-all hover:border-accent/50 hover:shadow-md">
                 <div className="mb-4 flex items-center justify-between">
                   <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
                     <Icon className="h-5 w-5 text-primary" />

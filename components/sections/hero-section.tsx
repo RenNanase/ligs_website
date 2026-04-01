@@ -5,7 +5,19 @@ import { useLanguage } from "@/lib/language-context"
 import { useDataStore } from "@/lib/data-store"
 import { Button } from "@/components/ui/button"
 import { ChevronLeft, ChevronRight } from "lucide-react"
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
+
+const FALLBACK_BANNER = {
+  id: "fallback",
+  image: "",
+  title: "Empowering Smallholders Nationwide",
+  titleMs: "Memperkasakan Pekebun Kecil Seluruh Negara",
+  caption: "Supporting rubber industry growth through innovation and sustainable practices.",
+  captionMs: "Menyokong pertumbuhan industri getah melalui inovasi dan amalan mampan.",
+  ctaText: "Learn More",
+  ctaTextMs: "Ketahui Lebih",
+  ctaLink: "/about",
+}
 
 export function HeroSection() {
   const { language } = useLanguage()
@@ -13,7 +25,11 @@ export function HeroSection() {
   const [current, setCurrent] = useState(0)
   const [isTransitioning, setIsTransitioning] = useState(false)
 
-  const total = banners.length
+  const slides = useMemo(
+    () => (banners.length > 0 ? banners : [FALLBACK_BANNER]),
+    [banners]
+  )
+  const total = slides.length
 
   const goTo = useCallback(
     (index: number) => {
@@ -39,13 +55,6 @@ export function HeroSection() {
     return () => clearInterval(interval)
   }, [goNext])
 
-  if (total === 0) return null
-
-  const slide = banners[current]
-  const title = language === "en" ? slide.title : slide.titleMs
-  const caption = language === "en" ? slide.caption : slide.captionMs
-  const ctaText = language === "en" ? slide.ctaText : slide.ctaTextMs
-
   // Generate gradient backgrounds for slides without images
   const gradients = [
     "from-primary via-primary/90 to-primary/80",
@@ -55,9 +64,9 @@ export function HeroSection() {
 
   return (
     <section className="relative w-full overflow-hidden" aria-roledescription="carousel" aria-label="Banner carousel">
-      {/* Slides */}
-      <div className="relative h-[70vh] min-h-[480px] max-h-[720px] w-full">
-        {banners.map((banner, index) => {
+      {/* Aspect-ratio container: landscape on mobile, taller on desktop */}
+      <div className="relative w-full aspect-[16/7] md:aspect-[16/6] lg:aspect-auto lg:h-[70vh] lg:min-h-[480px] lg:max-h-[720px]">
+        {slides.map((banner, index) => {
           const slideTitle = language === "en" ? banner.title : banner.titleMs
           const slideCaption = language === "en" ? banner.caption : banner.captionMs
           const slideCta = language === "en" ? banner.ctaText : banner.ctaTextMs
@@ -76,34 +85,41 @@ export function HeroSection() {
             >
               {/* Background */}
               {banner.image ? (
-                <div
-                  className="absolute inset-0 bg-cover bg-center"
-                  style={{ backgroundImage: `url(${banner.image})` }}
+                <img
+                  key={`${banner.id}-${banner.image}`}
+                  src={`${banner.image}${banner.image.includes("?") ? "&" : "?"}v=${banner.id}`}
+                  alt=""
+                  loading="eager"
+                  className="absolute inset-0 h-full w-full object-cover object-center"
                 />
               ) : (
                 <div className={`absolute inset-0 bg-gradient-to-br ${gradients[index % gradients.length]}`}>
-                  {/* Decorative elements */}
                   <div className="absolute -right-20 -top-20 h-80 w-80 rounded-full bg-accent/10" />
                   <div className="absolute -bottom-32 -left-20 h-96 w-96 rounded-full bg-primary-foreground/5" />
                   <div className="absolute right-1/4 top-1/3 h-40 w-40 rounded-full bg-accent/5" />
                 </div>
               )}
 
+              {/* Dark overlay for readability */}
+              {banner.image && (
+                <div className="absolute inset-0 bg-black/30" />
+              )}
+
               {/* Content */}
               <div className="relative z-10 flex h-full items-center">
-                <div className="mx-auto w-full max-w-7xl px-6">
+                <div className="mx-auto w-full max-w-7xl px-4 sm:px-6">
                   <div className="max-w-2xl">
-                    <h2 className="mb-4 font-heading text-3xl font-bold leading-tight text-primary-foreground text-balance sm:text-4xl md:text-5xl lg:text-6xl">
+                    <h2 className="mb-2 font-heading text-lg font-bold leading-tight text-primary-foreground text-balance sm:text-2xl sm:mb-3 md:text-4xl md:mb-4 lg:text-5xl xl:text-6xl">
                       {slideTitle}
                     </h2>
-                    <p className="mb-8 max-w-xl text-base leading-relaxed text-primary-foreground/80 text-pretty sm:text-lg">
+                    <p className="mb-3 max-w-xl text-xs leading-relaxed text-primary-foreground/80 text-pretty sm:text-sm sm:mb-5 md:text-base md:mb-8 lg:text-lg line-clamp-2 sm:line-clamp-none">
                       {slideCaption}
                     </p>
                     {slideCta && banner.ctaLink && (
                       <Link href={banner.ctaLink}>
                         <Button
-                          size="lg"
-                          className="bg-accent text-accent-foreground hover:bg-accent/90 px-8 text-base font-semibold"
+                          size="sm"
+                          className="bg-accent text-accent-foreground hover:bg-accent/90 text-xs font-semibold px-4 sm:px-6 sm:text-sm md:px-8 md:text-base md:h-11"
                         >
                           {slideCta}
                         </Button>
@@ -115,43 +131,29 @@ export function HeroSection() {
             </div>
           )
         })}
+
+        {total > 1 && (
+          <>
+            <button
+              type="button"
+              onClick={goPrev}
+              className="absolute left-2 top-1/2 z-20 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-black/35 text-primary-foreground shadow-md backdrop-blur-sm transition-colors hover:bg-black/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:left-4 sm:h-11 sm:w-11"
+              aria-label={language === "en" ? "Previous banner" : "Banner sebelumnya"}
+            >
+              <ChevronLeft className="h-5 w-5 sm:h-6 sm:w-6" aria-hidden />
+            </button>
+            <button
+              type="button"
+              onClick={goNext}
+              className="absolute right-2 top-1/2 z-20 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-black/35 text-primary-foreground shadow-md backdrop-blur-sm transition-colors hover:bg-black/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:right-4 sm:h-11 sm:w-11"
+              aria-label={language === "en" ? "Next banner" : "Banner seterusnya"}
+            >
+              <ChevronRight className="h-5 w-5 sm:h-6 sm:w-6" aria-hidden />
+            </button>
+          </>
+        )}
       </div>
 
-      {/* Navigation Arrows */}
-      <button
-        type="button"
-        onClick={goPrev}
-        className="absolute left-4 top-1/2 z-20 -translate-y-1/2 flex h-11 w-11 items-center justify-center rounded-full bg-primary-foreground/15 text-primary-foreground backdrop-blur-sm transition-all hover:bg-primary-foreground/25"
-        aria-label="Previous slide"
-      >
-        <ChevronLeft className="h-5 w-5" />
-      </button>
-      <button
-        type="button"
-        onClick={goNext}
-        className="absolute right-4 top-1/2 z-20 -translate-y-1/2 flex h-11 w-11 items-center justify-center rounded-full bg-primary-foreground/15 text-primary-foreground backdrop-blur-sm transition-all hover:bg-primary-foreground/25"
-        aria-label="Next slide"
-      >
-        <ChevronRight className="h-5 w-5" />
-      </button>
-
-      {/* Pagination Dots */}
-      <div className="absolute bottom-6 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2.5">
-        {banners.map((banner, index) => (
-          <button
-            key={banner.id}
-            type="button"
-            onClick={() => goTo(index)}
-            className={`h-2.5 rounded-full transition-all duration-300 ${
-              index === current
-                ? "w-8 bg-accent"
-                : "w-2.5 bg-primary-foreground/40 hover:bg-primary-foreground/60"
-            }`}
-            aria-label={`Go to slide ${index + 1}`}
-            aria-current={index === current ? "true" : undefined}
-          />
-        ))}
-      </div>
     </section>
   )
 }

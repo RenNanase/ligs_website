@@ -7,17 +7,45 @@ datasource db {
 }
 
 model User {
+  id                  String                @id @default(cuid())
+  email               String                @unique
+  password            String
+  name                String?
+  role                String                @default("user") @db.VarChar(20) // "admin" | "user"
+  allowedModules      Json?                 // string[] - modules user can access (admin ignores this)
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+  passwordResetTokens PasswordResetToken[]
+}
+
+model PasswordResetToken {
   id        String   @id @default(cuid())
-  email     String   @unique
-  password  String
-  name      String?
+  userId    String
+  token     String   @unique @db.VarChar(64)
+  expiresAt DateTime
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+  @@index([expiresAt])
+}
+
+model ActivityLog {
+  id        String   @id @default(cuid())
+  userId    String   @db.VarChar(191)
+  userName  String   @db.VarChar(255)
+  activity  String   @db.VarChar(500)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
 }
 
 model BannerSlide {
   id        String @id @default(cuid())
-  image     String @default("") @db.VarChar(2000)
+  image     String @default("") @db.VarChar(500)
   title     String @db.VarChar(255)
   titleMs   String @db.VarChar(255)
   caption   String @db.Text
@@ -39,29 +67,29 @@ model StatItem {
 }
 
 model NewsArticle {
-  id        String   @id @default(cuid())
-  title     String   @db.VarChar(500)
-  titleMs   String   @db.VarChar(500)
-  content   String   @db.Text
-  contentMs String   @db.Text
-  date      String   @db.VarChar(20)
-  image     String   @default("") @db.VarChar(2000)
-  category  String   @db.VarChar(100)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id         String    @id @default(cuid())
+  title      String   @db.VarChar(500)
+  titleMs    String   @db.VarChar(500)
+  content    String   @db.Text
+  contentMs  String   @db.Text
+  date       String   @db.VarChar(20)
+  category   String   @db.VarChar(100)
+  status     String   @default("draft") @db.VarChar(20)  // "draft" | "published"
+  isArchived Boolean  @default(false)
+  archivedAt DateTime?
+  images     NewsArticleImage[]
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([status])
 }
 
-model TeamMember {
-  id        String   @id @default(cuid())
-  name      String   @db.VarChar(255)
-  role      String   @db.VarChar(255)
-  roleMs    String   @db.VarChar(255)
-  bio       String   @db.Text
-  bioMs     String   @db.Text
-  image     String   @default("") @db.VarChar(2000)
-  sortOrder Int      @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+model NewsArticleImage {
+  id        String      @id @default(cuid())
+  articleId String
+  article   NewsArticle @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  url       String      @db.VarChar(500)
+  sortOrder Int         @default(0)
 }
 
 model Announcement {
@@ -72,7 +100,12 @@ model Announcement {
   summaryMs String   @db.Text
   date      String   @db.VarChar(20)
   pinned    Boolean  @default(false)
+  active    Boolean  @default(true)
   category  String   @db.VarChar(100)
+  imageUrl  String?  @db.VarChar(500)
+  linkUrl   String?  @db.VarChar(500)
+  linkText  String?  @db.VarChar(255)
+  links     Json?    // [{url: string, text: string}, ...] - multiple links per announcement
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -81,11 +114,10 @@ model Tender {
   id          String   @id @default(cuid())
   title       String   @db.VarChar(500)
   titleMs     String   @db.VarChar(500)
-  referenceNo String   @db.VarChar(50)
+  openingDate String   @db.VarChar(20)
   closingDate String   @db.VarChar(20)
-  publishDate String   @db.VarChar(20)
+  pdfUrl      String   @db.VarChar(500)
   status      String   @default("open") @db.VarChar(20)
-  category    String   @db.VarChar(100)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
@@ -100,6 +132,45 @@ model LandingContent {
   updatedAt      DateTime    @updatedAt
 }
 
+model SiteSettings {
+  id                     String    @id @default("singleton")
+  themeId                String    @default("default") @db.VarChar(50)
+  cartaOrganisasiImage   String?   @db.VarChar(500)
+  integritiVideoUrl    String?   @db.VarChar(500)
+  kepuasanPelangganOpen Boolean  @default(true)
+  kepuasanStafOpen     Boolean   @default(true)
+  lastUpdated           DateTime? @db.DateTime(3)
+}
+
+model IntegritiImage {
+  id        String   @id @default(cuid())
+  url       String   @db.VarChar(500)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+}
+
+model Achievement {
+  id              String   @id @default(cuid())
+  title           String   @db.VarChar(500)
+  description     String   @db.Text
+  imageUrl        String   @default("") @db.VarChar(500)
+  achievementDate DateTime @db.Date
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model RubberPriceDaily {
+  id         String   @id @default(cuid())
+  date       DateTime @unique @db.Date
+  lateks     Float
+  kepingan1  Float
+  kepingan2  Float
+  kentalan1  Float
+  kentalan2  Float
+  sekerap    Float
+  createdAt  DateTime @default(now())
+}
+
 model Highlight {
   id               String         @id @default(cuid())
   title            String         @db.VarChar(255)
@@ -110,4 +181,272 @@ model Highlight {
   sortOrder        Int            @default(0)
   landingContent   LandingContent @relation(fields: [landingContentId], references: [id], onDelete: Cascade)
   landingContentId String
+}
+
+model Perkhidmatan {
+  id         String   @id @default(cuid())
+  name       String   @db.VarChar(150)
+  logoPath   String   @db.VarChar(255)
+  url        String   @db.VarChar(255)
+  section    String   @default("orang_awam") @db.VarChar(50)
+  isActive   Boolean  @default(true)
+  sortOrder  Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model AgensiBerkaitan {
+  id         String   @id @default(cuid())
+  name       String   @db.VarChar(150)
+  logoPath   String   @db.VarChar(255)
+  url        String   @db.VarChar(255)
+  isActive   Boolean  @default(true)
+  sortOrder  Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model GalleryEvent {
+  id         String             @id @default(cuid())
+  title      String             @unique @db.VarChar(255)
+  date       DateTime           @db.Date
+  isArchived Boolean            @default(false)
+  archivedAt DateTime?
+  images     GalleryEventImage[]
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+
+  @@index([date])
+  @@index([title])
+}
+
+model GalleryEventImage {
+  id        String       @id @default(cuid())
+  eventId   String
+  event     GalleryEvent  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  url       String        @db.VarChar(500)
+  sortOrder Int           @default(0)
+  createdAt DateTime     @default(now())
+}
+
+model LaguLigs {
+  id        String   @id @default("singleton")
+  videoUrl String?  @db.VarChar(500)
+  updatedAt DateTime @updatedAt
+}
+
+model MediaSosial {
+  id          String   @id @default("singleton")
+  youtubeUrls Json?    // string[] - array of YouTube video URLs
+  updatedAt   DateTime @updatedAt
+}
+
+model JawatanKosong {
+  id          String   @id @default(cuid())
+  jawatanName String   @db.VarChar(500)
+  taraf       String   @default("Kontrak") @db.VarChar(50)
+  kekosongan  Int      @default(1)
+  tarikhLuput DateTime @db.Date
+  pdfUrl      String   @db.VarChar(500)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([tarikhLuput])
+}
+
+model CalendarEvent {
+  id        String   @id @default(cuid())
+  title     String   @db.VarChar(500)
+  startDate DateTime @db.Date
+  endDate   DateTime @db.Date
+  location  String   @db.VarChar(500)
+  tag       String   @db.VarChar(50)
+  imageUrl  String?  @db.VarChar(500)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([startDate])
+  @@index([tag])
+}
+
+model DirectoryBahagian {
+  id        String           @id @default(cuid())
+  name      String           @db.VarChar(255)
+  orderIndex Int             @default(0)
+  members   DirectoryMember[]
+
+  @@index([orderIndex])
+}
+
+model DirectoryMember {
+  id             String            @id @default(cuid())
+  bahagianId     String
+  bahagian       DirectoryBahagian @relation(fields: [bahagianId], references: [id], onDelete: Cascade)
+  name           String            @db.VarChar(255)
+  jawatan        String            @db.VarChar(255)
+  unitCawangan   String?           @db.VarChar(255)
+  noTelefon      String            @db.VarChar(50)
+  email          String            @db.VarChar(255)
+  imageUrl       String            @db.VarChar(500)
+  orderIndex   Int               @default(0)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  @@index([bahagianId])
+  @@index([bahagianId, orderIndex])
+}
+
+model Feedback {
+  id        String   @id @default(cuid())
+  name      String   @db.VarChar(255)
+  phone     String   @db.VarChar(50)
+  email     String   @db.VarChar(255)
+  subject   String   @db.VarChar(255)
+  message   String   @db.Text
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+model AkalSubmission {
+  id                String   @id @default(cuid())
+  namaParent        String   @db.VarChar(255)
+  noMykadParent     String   @db.VarChar(30)
+  unitBahagian      String?  @db.VarChar(255)
+  noSpkns           String?  @db.VarChar(100)
+  alamatRumah       String   @db.Text
+  noTel             String   @db.VarChar(50)
+  namaAnak          String   @db.VarChar(255)
+  noMykadAnak       String   @db.VarChar(30)
+  namaSekolah       String   @db.VarChar(500)
+  namaPeperiksaan   String   @db.VarChar(100)
+  tahunPeperiksaan  String   @db.VarChar(20)
+  noAngkaGiliran   String   @db.VarChar(50)
+  keputusanPeperiksaan String @db.VarChar(255)
+  pdfUrl            String   @db.VarChar(500)
+  createdAt         DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+model CustomerSatisfactionSurvey {
+  id                String   @id @default(cuid())
+  jantina           String   @db.VarChar(20)   // LELAKI | PEREMPUAN
+  umur              String   @db.VarChar(10)
+  daerah            String   @db.VarChar(255)
+  pekerjaan         String   @db.VarChar(255)
+  tahunPerkhidmatan String   @db.VarChar(10)
+  q1                String   @db.VarChar(50)   // Bersetuju | Tidak Bersetuju
+  q2                String   @db.VarChar(50)
+  q3                String   @db.VarChar(50)
+  q4                String   @db.VarChar(50)
+  q5                String   @db.VarChar(50)
+  q6                String   @db.VarChar(50)
+  q7                String   @db.VarChar(50)
+  q8                String   @db.VarChar(50)
+  q9                String   @db.VarChar(50)
+  cadanganKomen     String   @db.Text          // Q10
+  createdAt         DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+model StaffSatisfactionSurvey {
+  id             String   @id @default(cuid())
+  jantina        String   @db.VarChar(20)   // LELAKI | PEREMPUAN
+  daerah         String   @db.VarChar(255)
+  bahagianUnit   String   @db.VarChar(255)
+  tahunKhidmat   String   @db.VarChar(50)
+  q1             String   @db.VarChar(50)
+  q2             String   @db.VarChar(50)
+  q3             String   @db.VarChar(50)
+  q4             String   @db.VarChar(50)
+  q5             String   @db.VarChar(50)
+  q6             String   @db.VarChar(50)
+  q7             String   @db.VarChar(50)
+  q8             String   @db.VarChar(50)
+  cadanganKomen   String   @db.Text
+  createdAt       DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+model KelabSukanNews {
+  id            String   @id @default(cuid())
+  title         String   @db.VarChar(200)
+  content       String   @db.LongText
+  featuredImage String?  @db.VarChar(500)
+  datePosted    DateTime @db.Date
+  status        String   @default("draft") @db.VarChar(20)
+  sortOrder     Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([datePosted])
+  @@index([status])
+}
+
+model KelabSukanContent {
+  id        String   @id @default(cuid())
+  logoUrl   String?  @db.VarChar(500)
+  introHtml String   @db.LongText
+  updatedAt DateTime @updatedAt
+}
+
+model KelabSukanPresident {
+  id          String    @id @default(cuid())
+  name        String    @db.VarChar(255)
+  startDate   DateTime  @db.Date
+  endDate     DateTime? @db.Date
+  imageUrl    String    @db.VarChar(500)
+  description String?  @db.Text
+  sortOrder   Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([sortOrder])
+}
+
+model Penerbitan {
+  id        String   @id @default(cuid())
+  title     String   @db.VarChar(500)
+  date      DateTime @db.Date
+  pdfUrl    String   @db.VarChar(500)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([date])
+}
+
+model EPekeliling {
+  id                 String   @id @default(cuid())
+  noPekeliling       String   @db.VarChar(100)
+  noRujukan          String   @db.VarChar(100)
+  tajuk              String   @db.VarChar(500)
+  tarikhDikeluarkan String   @db.VarChar(20)
+  pdfUrl             String   @db.VarChar(500)
+  createdAt          DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([tarikhDikeluarkan])
+}
+
+model Bahagian {
+  id                String   @id @default(cuid())
+  name              String   @db.VarChar(255)
+  slug              String   @unique @db.VarChar(255)
+  shortDescription  String?  @db.Text
+  content           String   @db.LongText
+  featuredImage     String?  @db.VarChar(500)
+  membersImage      String?  @db.VarChar(500)
+  orderIndex        Int      @default(0)
+  status            String   @default("draft") @db.VarChar(20)
+  metaTitle         String?  @db.VarChar(255)
+  metaDescription   String?  @db.VarChar(500)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([slug])
+  @@index([orderIndex])
 }

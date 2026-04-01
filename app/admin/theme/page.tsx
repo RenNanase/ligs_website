@@ -30,7 +30,7 @@ function ThemeContent() {
             className={`relative rounded-xl border-2 bg-card p-6 text-left transition-all ${
               activeTheme === theme.id
                 ? "border-primary shadow-lg"
-                : "border-border hover:border-primary/30"
+                : "border-border hover:border-accent/50"
             }`}
           >
             {activeTheme === theme.id && (
@@ -76,7 +76,7 @@ function ThemeContent() {
           Preview
         </h2>
         <div className="flex flex-wrap gap-4">
-          <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
+          <Button className="bg-primary text-primary-foreground hover:bg-accent hover:text-accent-foreground">
             Primary Button
           </Button>
           <Button className="bg-accent text-accent-foreground hover:bg-accent/90">
