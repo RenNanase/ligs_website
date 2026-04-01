@@ -80,7 +80,13 @@ export default function AdminLoginPage() {
           <h1 className="font-heading text-2xl font-bold text-card-foreground">
             {t("admin.login")}
           </h1>
+<<<<<<< HEAD
           
+=======
+          <p className="mt-2 text-sm text-muted-foreground">
+            Lembaga Industri Getah Sabah
+          </p>
+>>>>>>> 91866b5ba89e98143037e30abed31cce5d1e3e33
         </div>
 
         {error && (
@@ -131,6 +137,7 @@ export default function AdminLoginPage() {
           </Button>
         </form>
 
+<<<<<<< HEAD
         
         <p className="mt-5 text-center">
           <Link
@@ -139,6 +146,10 @@ export default function AdminLoginPage() {
           >
             {t("admin.backToWebsite")}
           </Link>
+=======
+        <p className="mt-6 text-center text-xs text-muted-foreground">
+          Demo: admin@ligs.com / admin123
+>>>>>>> 91866b5ba89e98143037e30abed31cce5d1e3e33
         </p>
       </div>
     </div>

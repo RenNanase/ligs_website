@@ -99,7 +99,11 @@ export function AdminSidebar() {
           href="/admin/dashboard"
           className="text-lg font-bold text-sidebar-foreground"
         >
+<<<<<<< HEAD
           ligs Admin
+=======
+          LIGS Admin
+>>>>>>> 91866b5ba89e98143037e30abed31cce5d1e3e33
         </Link>
       </div>
 

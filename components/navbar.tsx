@@ -231,6 +231,7 @@ export function Navbar() {
             className="flex min-w-[280px] shrink-0 items-center rounded-lg transition-opacity hover:opacity-90 focus:outline-none focus:ring-0 sm:min-w-[180px] md:min-w-[200px]"
             aria-label="LIGS - Lembaga Industri Getah Sabah"
           >
+<<<<<<< HEAD
             <span className="relative block h-16 w-[280px] shrink-0 max-sm:h-16 max-sm:w-[280px] sm:h-11 sm:w-[200px] md:h-12 md:w-[280px]">
               <Image
                 src="/uploads/logo_menu.png"
@@ -247,6 +248,12 @@ export function Navbar() {
                 }}
               />
             </span>
+=======
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent text-accent-foreground text-sm font-black">
+              LIGS
+            </div>
+            <span className="font-heading hidden sm:inline">LIGS</span>
+>>>>>>> 91866b5ba89e98143037e30abed31cce5d1e3e33
           </Link>
 
           {/* Desktop Navigation */}

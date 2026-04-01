@@ -11,6 +11,7 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+<<<<<<< HEAD
   allowedDevOrigins: ["118.101.160.33", "192.168.1.114", "w2.ligs.gov.my", "https://w2.ligs.gov.my"],
   async redirects() {
     return [
@@ -35,6 +36,9 @@ const nextConfig = {
       },
     ]
   },
+=======
+  turbopack: {},
+>>>>>>> 91866b5ba89e98143037e30abed31cce5d1e3e33
 }
 
 export default nextConfig

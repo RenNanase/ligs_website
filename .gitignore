@@ -12,6 +12,8 @@ node_modules/
 .env*.local
 .DS_Store
 /lib/generated/prisma
+logs/
+*.log
 
 # Uploaded images (keep .gitkeep)
 public/uploads/*
