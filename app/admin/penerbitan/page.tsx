@@ -64,8 +64,8 @@ export default function AdminPenerbitanPage() {
       toast.error("Please select a PDF file")
       return
     }
-    if (file.size >= 50 * 1024 * 1024) {
-      toast.error("PDF must be less than 50 MB")
+    if (file.size > 200 * 1024 * 1024) {
+      toast.error("PDF must be 200 MB or smaller")
       return
     }
     e.target.value = ""
@@ -267,7 +267,7 @@ export default function AdminPenerbitanPage() {
                 />
               </div>
               <div>
-                <Label>PDF File (required, max 50 MB)</Label>
+                <Label>PDF File (required, max 200 MB)</Label>
                 <div className="mt-1 flex items-center gap-2">
                   <input
                     ref={pdfInputRef}

@@ -4,6 +4,7 @@ import { NextResponse } from "next/server"
 import { updateLastUpdated } from "@/lib/update-last-updated"
 import { logActivity } from "@/lib/activity-log"
 
+/** Lightweight event metadata (no image rows — use /images?page= for paginated images). */
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -13,8 +14,13 @@ export async function GET(
 
     const event = await prisma.galleryEvent.findUnique({
       where: { id },
-      include: {
-        images: { orderBy: { sortOrder: "asc" } },
+      select: {
+        id: true,
+        title: true,
+        date: true,
+        createdAt: true,
+        updatedAt: true,
+        _count: { select: { images: true } },
       },
     })
 
@@ -22,7 +28,14 @@ export async function GET(
       return NextResponse.json({ error: "Event not found" }, { status: 404 })
     }
 
-    return NextResponse.json(event)
+    return NextResponse.json({
+      id: event.id,
+      title: event.title,
+      date: event.date,
+      createdAt: event.createdAt,
+      updatedAt: event.updatedAt,
+      imageCount: event._count.images,
+    })
   } catch (err) {
     console.error("GET /api/gallery/events/[id] error:", err)
     return NextResponse.json({ error: "Failed to fetch event" }, { status: 500 })
@@ -66,13 +79,35 @@ export async function PUT(
       updateData.date = d
     }
 
-    const event = await prisma.galleryEvent.update({
+    await prisma.galleryEvent.update({
       where: { id },
       data: updateData,
-      include: { images: { orderBy: { sortOrder: "asc" } } },
     })
 
-    return NextResponse.json(event)
+    const event = await prisma.galleryEvent.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        title: true,
+        date: true,
+        createdAt: true,
+        updatedAt: true,
+        _count: { select: { images: true } },
+      },
+    })
+
+    if (!event) {
+      return NextResponse.json({ error: "Event not found" }, { status: 404 })
+    }
+
+    return NextResponse.json({
+      id: event.id,
+      title: event.title,
+      date: event.date,
+      createdAt: event.createdAt,
+      updatedAt: event.updatedAt,
+      imageCount: event._count.images,
+    })
   } catch (err) {
     console.error("PUT /api/gallery/events/[id] error:", err)
     return NextResponse.json({ error: "Failed to update event" }, { status: 500 })

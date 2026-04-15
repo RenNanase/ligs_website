@@ -31,7 +31,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Plus, Pencil, Trash2, Loader2, Search } from "lucide-react"
+import { Plus, Pencil, Trash2, Loader2, Search, Images, CalendarDays, Type } from "lucide-react"
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { toast } from "sonner"
@@ -256,49 +256,101 @@ export default function AdminGalleryPage() {
           }
         }}
       >
-        <DialogContent className="flex h-[min(90vh,640px)] max-h-[90vh] w-[min(95vw,520px)] max-w-[95vw] flex-col overflow-hidden p-0">
-          <DialogHeader className="shrink-0 border-b border-border px-6 py-4">
-            <DialogTitle>Create Gallery Event</DialogTitle>
-            <DialogDescription className="sr-only">
-              Add a new gallery event with title, date, and optional images.
-            </DialogDescription>
+        <DialogContent className="flex h-[min(92vh,680px)] max-h-[92vh] w-[min(95vw,560px)] max-w-[95vw] flex-col gap-0 overflow-hidden border border-neutral-200/90 bg-white p-0 shadow-2xl ring-1 ring-black/5 sm:rounded-2xl [&>button]:right-5 [&>button]:top-5 [&>button]:rounded-full [&>button]:text-neutral-500 [&>button]:hover:bg-neutral-100 [&>button]:hover:text-neutral-900">
+          <DialogHeader className="shrink-0 space-y-0 border-b border-neutral-100 bg-white px-6 pb-5 pt-6 text-left sm:px-8 sm:pt-7">
+            <div className="flex gap-4">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/15 to-primary/5 text-primary shadow-inner">
+                <Images className="h-6 w-6" strokeWidth={1.75} />
+              </div>
+              <div className="min-w-0 flex-1 space-y-1.5 pt-0.5">
+                <DialogTitle className="text-xl font-semibold tracking-tight text-neutral-900">
+                  New gallery event
+                </DialogTitle>
+                <DialogDescription className="text-sm leading-relaxed text-neutral-500">
+                  Add a title and date, then optionally attach images. There is no limit; large batches upload in chunks.
+                </DialogDescription>
+              </div>
+            </div>
           </DialogHeader>
-          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-6 py-4">
-            <div>
-              <Label htmlFor="gallery-title">Event Title (required)</Label>
-              <Input
-                id="gallery-title"
-                value={createForm.title}
-                onChange={(e) => setCreateForm((f) => ({ ...f, title: e.target.value }))}
-                placeholder="e.g. Annual Meeting 2026"
-                className="mt-1"
-              />
+
+          <div className="min-h-0 flex-1 overflow-y-auto bg-white px-6 py-6 sm:px-8">
+            <div className="space-y-6">
+              <div className="grid gap-5 sm:grid-cols-2">
+                <div className="space-y-2 sm:col-span-2">
+                  <Label
+                    htmlFor="gallery-title"
+                    className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-neutral-500"
+                  >
+                    <Type className="h-3.5 w-3.5 text-primary" aria-hidden />
+                    Event title
+                    <span className="font-normal normal-case text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id="gallery-title"
+                    value={createForm.title}
+                    onChange={(e) => setCreateForm((f) => ({ ...f, title: e.target.value }))}
+                    placeholder="e.g. Annual Meeting 2026"
+                    className="h-11 border-neutral-200 bg-white text-neutral-900 shadow-sm transition-colors placeholder:text-neutral-400 focus-visible:border-primary focus-visible:ring-primary/20"
+                  />
+                </div>
+                <div className="space-y-2 sm:col-span-2 sm:max-w-xs">
+                  <Label
+                    htmlFor="gallery-date"
+                    className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-neutral-500"
+                  >
+                    <CalendarDays className="h-3.5 w-3.5 text-primary" aria-hidden />
+                    Event date
+                    <span className="font-normal normal-case text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id="gallery-date"
+                    type="date"
+                    value={createForm.date}
+                    onChange={(e) => setCreateForm((f) => ({ ...f, date: e.target.value }))}
+                    className="h-11 border-neutral-200 bg-white text-neutral-900 shadow-sm focus-visible:border-primary focus-visible:ring-primary/20"
+                  />
+                </div>
+              </div>
+
+              <div className="min-w-0 rounded-xl border border-neutral-200/90 bg-neutral-50/40 p-4 sm:p-5">
+                <Label className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                  <Images className="h-3.5 w-3.5 text-primary" aria-hidden />
+                  Images
+                  <span className="font-normal normal-case text-neutral-400"></span>
+                </Label>
+                
+                <div className="rounded-lg border border-dashed border-neutral-200 bg-white p-1 sm:p-2">
+                  <MultiImageUpload
+                    value={createForm.imageUrls}
+                    onChange={(urls) =>
+                      setCreateForm((f) => ({
+                        ...f,
+                        imageUrls: typeof urls === "function" ? urls(f.imageUrls) : urls,
+                      }))
+                    }
+                    uploadPath="/api/gallery/upload"
+                    uploadSearchParams={
+                      createForm.title.trim() ? { eventTitle: createForm.title.trim() } : undefined
+                    }
+                    disabled={!createForm.title.trim()}
+                    className="min-w-0"
+                  />
+                </div>
+              </div>
+
+              {createError && (
+                <p className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2.5 text-sm text-destructive">
+                  {createError}
+                </p>
+              )}
             </div>
-            <div>
-              <Label htmlFor="gallery-date">Event Date (required)</Label>
-              <Input
-                id="gallery-date"
-                type="date"
-                value={createForm.date}
-                onChange={(e) => setCreateForm((f) => ({ ...f, date: e.target.value }))}
-                className="mt-1"
-              />
-            </div>
-            <div className="min-w-0">
-              <Label>Images (optional, up to 20)</Label>
-              <MultiImageUpload
-                value={createForm.imageUrls}
-                onChange={(urls) => setCreateForm((f) => ({ ...f, imageUrls: urls }))}
-                uploadPath="/api/gallery/upload"
-                maxFiles={20}
-                className="mt-1 min-w-0"
-              />
-            </div>
-            {createError && <p className="text-sm text-destructive">{createError}</p>}
           </div>
-          <DialogFooter className="shrink-0 border-t border-border px-6 py-4">
+
+          <DialogFooter className="shrink-0 gap-2 border-t border-neutral-100 bg-white px-6 py-4 sm:flex-row sm:justify-end sm:px-8 sm:py-5">
             <Button
-              variant="outline"
+              type="button"
+              variant="ghost"
+              className="text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
               onClick={() => {
                 if (hasUnsavedCreate && !confirm("Discard changes?")) return
                 setCreateOpen(false)
@@ -306,14 +358,19 @@ export default function AdminGalleryPage() {
             >
               Cancel
             </Button>
-            <Button onClick={handleCreate} disabled={createSaving}>
+            <Button
+              type="button"
+              onClick={handleCreate}
+              disabled={createSaving}
+              className="min-w-[120px] gap-2 rounded-lg font-semibold shadow-sm"
+            >
               {createSaving ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Saving...
+                  Creating…
                 </>
               ) : (
-                "Save"
+                "Create event"
               )}
             </Button>
           </DialogFooter>

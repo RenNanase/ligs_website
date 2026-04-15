@@ -14,11 +14,7 @@ const _dmSans = DM_Sans({
 })
 
 export const metadata: Metadata = {
-<<<<<<< HEAD
   title: "Portal Rasmi Lembaga Industri Getah Sabah",
-=======
-  title: "LIGS - Building the Future Together",
->>>>>>> 91866b5ba89e98143037e30abed31cce5d1e3e33
   description:
     "Industri Getah Yang Moden Berdaya Maju Dan Dinamik",
 }

@@ -26,7 +26,8 @@ export async function GET() {
     "Tahun": s.tahunPeperiksaan,
     "No. Angka Giliran": s.noAngkaGiliran,
     "Keputusan Peperiksaan": s.keputusanPeperiksaan,
-    "Lampiran PDF": s.pdfUrl,
+    "Lampiran PDF (Keputusan Peperiksaan)": s.pdfUrl,
+    "Lampiran PDF (MyKad)": s.mykadPdfUrl || "",
   }))
 
   const ws = XLSX.utils.json_to_sheet(rows)
@@ -45,6 +46,7 @@ export async function GET() {
     { wch: 8 },
     { wch: 18 },
     { wch: 25 },
+    { wch: 35 },
     { wch: 35 },
   ]
   ws["!cols"] = colWidths

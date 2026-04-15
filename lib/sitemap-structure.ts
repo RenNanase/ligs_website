@@ -76,7 +76,6 @@ export function buildSitemapCategories(bahagian: { slug: string; name: string }[
         { href: "/orang-awam", labelKey: "nav.orangAwam", keywords: ["public", "awam"] },
         { href: "/tenders", labelKey: "nav.orangAwam.tender", keywords: ["tender", "procurement"] },
         { href: "/jawatan-kosong", labelKey: "nav.orangAwam.jawatanKosong", keywords: ["vacancy", "job", "jawatan"] },
-        { href: "/akal", labelKey: "nav.akal.form", keywords: ["akal", "anugerah", "kecemerlangan", "akademik", "spm"] },
         { href: "/kalender", labelKey: "nav.orangAwam.kalender", keywords: ["calendar", "kalender"] },
       ],
     },

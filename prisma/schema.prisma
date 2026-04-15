@@ -78,10 +78,13 @@ model NewsArticle {
   isArchived Boolean  @default(false)
   archivedAt DateTime?
   images     NewsArticleImage[]
+  galleryEventId String?
+  galleryEvent   GalleryEvent? @relation(fields: [galleryEventId], references: [id], onDelete: SetNull)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
   @@index([status])
+  @@index([galleryEventId])
 }
 
 model NewsArticleImage {
@@ -213,6 +216,7 @@ model GalleryEvent {
   isArchived Boolean            @default(false)
   archivedAt DateTime?
   images     GalleryEventImage[]
+  newsArticles NewsArticle[]
   createdAt  DateTime           @default(now())
   updatedAt  DateTime           @updatedAt
 
@@ -323,7 +327,8 @@ model AkalSubmission {
   tahunPeperiksaan  String   @db.VarChar(20)
   noAngkaGiliran   String   @db.VarChar(50)
   keputusanPeperiksaan String @db.VarChar(255)
-  pdfUrl            String   @db.VarChar(500)
+  pdfUrl            String   @db.VarChar(500) // Keputusan / slip peperiksaan (e.g. SPM)
+  mykadPdfUrl       String?  @db.VarChar(500) // Salinan MyKad (optional for legacy rows)
   createdAt         DateTime @default(now())
 
   @@index([createdAt])

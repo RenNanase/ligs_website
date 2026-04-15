@@ -12,6 +12,16 @@ const DECLARATION =
 
 const MAX_PDF_SIZE = 10 * 1024 * 1024 // 10 MB
 
+function validatePdfFile(file: File): string | null {
+  if (file.type !== "application/pdf") {
+    return "Hanya fail PDF dibenarkan."
+  }
+  if (file.size > MAX_PDF_SIZE) {
+    return "Saiz fail maksimum 10 MB."
+  }
+  return null
+}
+
 export function AkalForm() {
   const [submitting, setSubmitting] = useState(false)
   const [success, setSuccess] = useState(false)
@@ -30,39 +40,47 @@ export function AkalForm() {
     tahunPeperiksaan: "",
     noAngkaGiliran: "",
     keputusanPeperiksaan: "",
-    pdfUrl: "",
   })
-  const [pdfFile, setPdfFile] = useState<File | null>(null)
-  const [pdfError, setPdfError] = useState<string | null>(null)
+  const [spmPdfFile, setSpmPdfFile] = useState<File | null>(null)
+  const [mykadPdfFile, setMykadPdfFile] = useState<File | null>(null)
+  const [spmPdfError, setSpmPdfError] = useState<string | null>(null)
+  const [mykadPdfError, setMykadPdfError] = useState<string | null>(null)
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSpmFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    setPdfError(null)
+    setSpmPdfError(null)
     if (!file) {
-      setPdfFile(null)
-      setForm((f) => ({ ...f, pdfUrl: "" }))
+      setSpmPdfFile(null)
       return
     }
-    if (file.type !== "application/pdf") {
-      setPdfError("Hanya fail PDF dibenarkan.")
-      setPdfFile(null)
-      setForm((f) => ({ ...f, pdfUrl: "" }))
+    const err = validatePdfFile(file)
+    if (err) {
+      setSpmPdfError(err)
+      setSpmPdfFile(null)
       return
     }
-    if (file.size > MAX_PDF_SIZE) {
-      setPdfError("Saiz fail maksimum 10 MB.")
-      setPdfFile(null)
-      setForm((f) => ({ ...f, pdfUrl: "" }))
-      return
-    }
-    setPdfFile(file)
-    // Will upload on submit
+    setSpmPdfFile(file)
   }
 
-  const uploadPdf = async (): Promise<string> => {
-    if (!pdfFile) throw new Error("Sila lampirkan fail PDF.")
+  const handleMykadFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    setMykadPdfError(null)
+    if (!file) {
+      setMykadPdfFile(null)
+      return
+    }
+    const err = validatePdfFile(file)
+    if (err) {
+      setMykadPdfError(err)
+      setMykadPdfFile(null)
+      return
+    }
+    setMykadPdfFile(file)
+  }
+
+  const uploadPdf = async (file: File): Promise<string> => {
     const formData = new FormData()
-    formData.append("file", pdfFile)
+    formData.append("file", file)
     const res = await fetch("/api/akal/upload", {
       method: "POST",
       body: formData,
@@ -100,19 +118,27 @@ export function AkalForm() {
       }
     }
 
-    if (!pdfFile) {
-      setPdfError("Sila lampirkan fail PDF.")
-      setError("Sila lampirkan fail PDF.")
+    if (!spmPdfFile) {
+      setSpmPdfError("Sila lampirkan fail PDF keputusan peperiksaan.")
+      setError("Sila lampirkan fail PDF keputusan peperiksaan.")
+      return
+    }
+    if (!mykadPdfFile) {
+      setMykadPdfError("Sila lampirkan fail PDF salinan MyKad.")
+      setError("Sila lampirkan fail PDF salinan MyKad.")
       return
     }
 
     setSubmitting(true)
     try {
-      const pdfUrl = await uploadPdf()
+      const [pdfUrl, mykadPdfUrl] = await Promise.all([
+        uploadPdf(spmPdfFile),
+        uploadPdf(mykadPdfFile),
+      ])
       const res = await fetch("/api/akal", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, pdfUrl }),
+        body: JSON.stringify({ ...form, pdfUrl, mykadPdfUrl }),
       })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) {
@@ -133,9 +159,9 @@ export function AkalForm() {
         tahunPeperiksaan: "",
         noAngkaGiliran: "",
         keputusanPeperiksaan: "",
-        pdfUrl: "",
       })
-      setPdfFile(null)
+      setSpmPdfFile(null)
+      setMykadPdfFile(null)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Gagal menghantar borang.")
     } finally {
@@ -318,40 +344,87 @@ export function AkalForm() {
         </div>
       </div>
 
-      {/* PDF Upload */}
-      <div className="space-y-2">
-        <Label>Sokong Dokumen (PDF, max 10MB) *</Label>
-        <div className="flex flex-wrap items-center gap-3">
-          <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-border bg-muted/50 px-4 py-2 text-sm font-medium transition-colors hover:bg-muted">
-            <Upload className="h-4 w-4" />
-            Pilih fail PDF
-            <input
-              type="file"
-              accept="application/pdf"
-              onChange={handleFileChange}
-              className="hidden"
-            />
-          </label>
-          {pdfFile && (
-            <span className="flex items-center gap-2 rounded-lg bg-primary/10 px-3 py-1.5 text-sm text-primary">
-              <FileText className="h-4 w-4" />
-              {pdfFile.name}
-              <button
-                type="button"
-                onClick={() => {
-                  setPdfFile(null)
-                  setForm((f) => ({ ...f, pdfUrl: "" }))
-                  setPdfError(null)
-                }}
-                className="rounded p-0.5 hover:bg-primary/20"
-                aria-label="Buang fail"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </span>
-          )}
+      {/* PDF uploads */}
+      <div className="space-y-6">
+        <h3 className="border-b border-border pb-2 font-semibold text-card-foreground">
+          3. DOKUMEN SOKONGAN (PDF)
+        </h3>
+
+        <div className="space-y-2">
+          <Label htmlFor="spm-pdf">Keputusan peperiksaan / slip SPM (PDF, max 10MB) *</Label>
+          <div className="flex flex-wrap items-center gap-3">
+            <label
+              htmlFor="spm-pdf"
+              className="flex cursor-pointer items-center gap-2 rounded-lg border border-border bg-muted/50 px-4 py-2 text-sm font-medium transition-colors hover:bg-muted"
+            >
+              <Upload className="h-4 w-4" />
+              Pilih fail PDF
+              <input
+                id="spm-pdf"
+                type="file"
+                accept="application/pdf"
+                onChange={handleSpmFileChange}
+                className="hidden"
+              />
+            </label>
+            {spmPdfFile && (
+              <span className="flex items-center gap-2 rounded-lg bg-primary/10 px-3 py-1.5 text-sm text-primary">
+                <FileText className="h-4 w-4" />
+                {spmPdfFile.name}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSpmPdfFile(null)
+                    setSpmPdfError(null)
+                  }}
+                  className="rounded p-0.5 hover:bg-primary/20"
+                  aria-label="Buang fail"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </span>
+            )}
+          </div>
+          {spmPdfError && <p className="text-sm text-destructive">{spmPdfError}</p>}
         </div>
-        {pdfError && <p className="text-sm text-destructive">{pdfError}</p>}
+
+        <div className="space-y-2">
+          <Label htmlFor="mykad-pdf">Salinan MyKad (PDF, max 10MB) *</Label>
+          <div className="flex flex-wrap items-center gap-3">
+            <label
+              htmlFor="mykad-pdf"
+              className="flex cursor-pointer items-center gap-2 rounded-lg border border-border bg-muted/50 px-4 py-2 text-sm font-medium transition-colors hover:bg-muted"
+            >
+              <Upload className="h-4 w-4" />
+              Pilih fail PDF
+              <input
+                id="mykad-pdf"
+                type="file"
+                accept="application/pdf"
+                onChange={handleMykadFileChange}
+                className="hidden"
+              />
+            </label>
+            {mykadPdfFile && (
+              <span className="flex items-center gap-2 rounded-lg bg-primary/10 px-3 py-1.5 text-sm text-primary">
+                <FileText className="h-4 w-4" />
+                {mykadPdfFile.name}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMykadPdfFile(null)
+                    setMykadPdfError(null)
+                  }}
+                  className="rounded p-0.5 hover:bg-primary/20"
+                  aria-label="Buang fail"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </span>
+            )}
+          </div>
+          {mykadPdfError && <p className="text-sm text-destructive">{mykadPdfError}</p>}
+        </div>
       </div>
 
       {/* Declaration */}

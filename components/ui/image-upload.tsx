@@ -3,11 +3,7 @@
 import * as React from "react"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
-<<<<<<< HEAD
 import { ImageIcon, Upload, X, Loader2, AlertCircle } from "lucide-react"
-=======
-import { ImageIcon, Upload, X, Loader2 } from "lucide-react"
->>>>>>> 91866b5ba89e98143037e30abed31cce5d1e3e33
 import { cn } from "@/lib/utils"
 
 export interface ImageUploadProps {
@@ -46,8 +42,6 @@ export function ImageUpload({
   const [uploading, setUploading] = React.useState(false)
   const [error, setError] = React.useState("")
   const [previewError, setPreviewError] = React.useState(false)
-  const [uploading, setUploading] = React.useState(false)
-  const [error, setError] = React.useState("")
   const showPreview = Boolean(value) && !previewError
   // Cache-bust image URL so newly uploaded images display immediately (avoids browser/proxy 404 cache)
   const imageSrc = React.useMemo(
@@ -57,7 +51,6 @@ export function ImageUpload({
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-<<<<<<< HEAD
     if (!file || !file.type.startsWith("image/")) return
     e.target.value = ""
 
@@ -65,9 +58,6 @@ export function ImageUpload({
       setError(`File too large. Maximum size is ${Math.round(maxSize / 1024 / 1024)} MB.`)
       return
     }
-=======
-    if (!file) return
->>>>>>> 91866b5ba89e98143037e30abed31cce5d1e3e33
 
     setError("")
     setUploading(true)
@@ -76,7 +66,6 @@ export function ImageUpload({
       const formData = new FormData()
       formData.append("file", file)
 
-<<<<<<< HEAD
       const res = await fetch(uploadPath, {
         method: "POST",
         body: formData,
@@ -90,31 +79,12 @@ export function ImageUpload({
 
       const { url } = await res.json()
       onChange(url)
+      setPreviewError(false)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed")
     } finally {
       setUploading(false)
-=======
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      })
-
-      const data = await res.json()
-
-      if (!res.ok) {
-        setError(data.error || "Upload failed")
-        return
-      }
-
-      onChange(data.url)
-      setPreviewError(false)
-    } catch {
-      setError("Upload failed. Please try again.")
-    } finally {
-      setUploading(false)
       if (inputRef.current) inputRef.current.value = ""
->>>>>>> 91866b5ba89e98143037e30abed31cce5d1e3e33
     }
   }
 
@@ -135,11 +105,7 @@ export function ImageUpload({
       <input
         ref={inputRef}
         type="file"
-<<<<<<< HEAD
         accept={accept}
-=======
-        accept="image/jpeg,image/png,image/webp,image/gif"
->>>>>>> 91866b5ba89e98143037e30abed31cce5d1e3e33
         className="sr-only"
         aria-hidden
         onChange={handleFileChange}
@@ -185,11 +151,7 @@ export function ImageUpload({
               ) : (
                 <Upload className="h-4 w-4" />
               )}
-<<<<<<< HEAD
               {uploading ? "Uploading..." : "Replace image"}
-=======
-              Replace image
->>>>>>> 91866b5ba89e98143037e30abed31cce5d1e3e33
             </Button>
           </>
         ) : (
@@ -210,14 +172,10 @@ export function ImageUpload({
         )}
       </div>
       {error && (
-<<<<<<< HEAD
         <p className="flex items-center gap-2 rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm font-medium text-destructive" role="alert">
           <AlertCircle className="h-4 w-4 shrink-0" aria-hidden />
           {error}
         </p>
-=======
-        <p className="text-sm text-destructive">{error}</p>
->>>>>>> 91866b5ba89e98143037e30abed31cce5d1e3e33
       )}
     </div>
   )

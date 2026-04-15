@@ -65,13 +65,6 @@ export default function AdminDashboardPage() {
         <h1 className="font-heading text-3xl font-bold text-foreground">
           {t("admin.dashboard")}
         </h1>
-<<<<<<< HEAD
-       
-=======
-        <p className="mt-1 text-muted-foreground">
-          Welcome to the LIGS panel.
-        </p>
->>>>>>> 91866b5ba89e98143037e30abed31cce5d1e3e33
       </div>
 
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
