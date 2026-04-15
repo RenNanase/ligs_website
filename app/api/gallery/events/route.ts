@@ -4,6 +4,8 @@ import { NextResponse } from "next/server"
 import { updateLastUpdated } from "@/lib/update-last-updated"
 import { logActivity } from "@/lib/activity-log"
 
+const CREATE_CHUNK = 200
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
@@ -79,35 +81,99 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Valid date is required" }, { status: 400 })
     }
 
+    const urls = Array.isArray(imageUrls)
+      ? imageUrls.map((u: unknown) => String(u).trim()).filter(Boolean)
+      : []
+
     const existing = await prisma.galleryEvent.findUnique({
       where: { title: trimmedTitle },
+      select: { id: true, isArchived: true },
     })
-    if (existing) {
+
+    if (existing && !existing.isArchived) {
       return NextResponse.json(
-        { error: "An event with this title already exists" },
+        {
+          error:
+            "An event with this title already exists. Use a different title, or open the existing event to edit it.",
+        },
         { status: 409 }
       )
     }
 
-    const urls = Array.isArray(imageUrls) ? imageUrls.slice(0, 20) : []
+    let eventId: string
 
-    const event = await prisma.galleryEvent.create({
-      data: {
-        title: trimmedTitle,
-        date: eventDate,
-        images: {
-          create: urls.map((url: string, i: number) => ({ url, sortOrder: i })),
+    if (existing?.isArchived) {
+      await prisma.$transaction(async (tx) => {
+        await tx.galleryEvent.update({
+          where: { id: existing.id },
+          data: {
+            isArchived: false,
+            archivedAt: null,
+            date: eventDate,
+          },
+        })
+        await tx.galleryEventImage.deleteMany({ where: { eventId: existing.id } })
+        for (let offset = 0; offset < urls.length; offset += CREATE_CHUNK) {
+          const slice = urls.slice(offset, offset + CREATE_CHUNK)
+          await tx.galleryEventImage.createMany({
+            data: slice.map((url: string, i: number) => ({
+              eventId: existing.id,
+              url,
+              sortOrder: offset + i,
+            })),
+          })
+        }
+      })
+      eventId = existing.id
+    } else {
+      const event = await prisma.galleryEvent.create({
+        data: {
+          title: trimmedTitle,
+          date: eventDate,
         },
-      },
-      include: {
-        images: { orderBy: { sortOrder: "asc" } },
+      })
+      eventId = event.id
+      for (let offset = 0; offset < urls.length; offset += CREATE_CHUNK) {
+        const slice = urls.slice(offset, offset + CREATE_CHUNK)
+        await prisma.galleryEventImage.createMany({
+          data: slice.map((url: string, i: number) => ({
+            eventId: event.id,
+            url,
+            sortOrder: offset + i,
+          })),
+        })
+      }
+    }
+
+    const withCount = await prisma.galleryEvent.findUnique({
+      where: { id: eventId },
+      select: {
+        id: true,
+        title: true,
+        date: true,
+        createdAt: true,
+        updatedAt: true,
+        _count: { select: { images: true } },
       },
     })
 
     await updateLastUpdated()
     const userName = auth.session.user.name ?? auth.session.user.email ?? "Unknown"
-    await logActivity(auth.session.user.id, userName, `add new gallery event (${trimmedTitle})`)
-    return NextResponse.json(event, { status: 201 })
+    const logLabel = existing?.isArchived
+      ? `restored gallery event from archive (${trimmedTitle})`
+      : `add new gallery event (${trimmedTitle})`
+    await logActivity(auth.session.user.id, userName, logLabel)
+    return NextResponse.json(
+      {
+        id: withCount!.id,
+        title: withCount!.title,
+        date: withCount!.date,
+        createdAt: withCount!.createdAt,
+        updatedAt: withCount!.updatedAt,
+        imageCount: withCount!._count.images,
+      },
+      { status: 201 }
+    )
   } catch (err) {
     console.error("POST /api/gallery/events error:", err)
     return NextResponse.json({ error: "Failed to create event" }, { status: 500 })

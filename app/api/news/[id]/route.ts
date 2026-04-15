@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma"
+import { ensureNewsGalleryColumn } from "@/lib/ensure-news-gallery-column"
 import { NextResponse } from "next/server"
 import { requirePermission } from "@/lib/auth"
 import { canPublishNews } from "@/lib/permissions"
@@ -9,16 +10,35 @@ export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  await ensureNewsGalleryColumn()
+
   const { id } = await params
-  const article = await prisma.newsArticle.findUnique({
-    where: { id },
-    include: { images: { orderBy: { sortOrder: "asc" } } },
-  })
+  let article
+  try {
+    article = await prisma.newsArticle.findUnique({
+      where: { id },
+      include: {
+        images: { orderBy: { sortOrder: "asc" } },
+        galleryEvent: { select: { title: true } },
+      },
+    })
+  } catch (err) {
+    console.warn("GET /api/news/[id]: gallery relation failed, loading without it:", err)
+    article = await prisma.newsArticle.findUnique({
+      where: { id },
+      include: {
+        images: { orderBy: { sortOrder: "asc" } },
+      },
+    })
+  }
   if (!article) return NextResponse.json({ error: "Not found" }, { status: 404 })
+  const { galleryEvent, images: imageRows, ...articleRest } = article
   return NextResponse.json({
-    ...article,
+    ...articleRest,
     status: (article as { status?: string }).status ?? "published",
-    images: article.images.map((img) => img.url),
+    images: imageRows.map((img) => img.url),
+    galleryEventId: article.galleryEventId ?? null,
+    galleryEventTitle: galleryEvent?.title ?? null,
   })
 }
 
@@ -26,12 +46,15 @@ export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  await ensureNewsGalleryColumn()
+
   const auth = await requirePermission("news")
   if (!auth.authenticated) return auth.response
 
   const { id } = await params
   const body = await request.json()
-  const { createdAt, updatedAt, id: _id, images, status: reqStatus, ...rest } = body
+  const { createdAt, updatedAt, id: _id, images, status: reqStatus, galleryEventId: rawGalleryId, ...rest } =
+    body
 
   // Only publisher/admin can set status to published
   if (reqStatus === "published" && !canPublishNews(auth.session.user.role)) {
@@ -54,6 +77,25 @@ export async function PUT(
     articleData.status = reqStatus
   }
 
+  if (rawGalleryId !== undefined) {
+    if (rawGalleryId === null || rawGalleryId === "") {
+      articleData.galleryEventId = null
+    } else {
+      const gid = String(rawGalleryId).trim()
+      const ev = await prisma.galleryEvent.findFirst({
+        where: { id: gid, isArchived: false },
+        select: { id: true },
+      })
+      if (!ev) {
+        return NextResponse.json(
+          { error: "Selected gallery event was not found or is archived." },
+          { status: 400 }
+        )
+      }
+      articleData.galleryEventId = gid
+    }
+  }
+
   const imageUrls = (Array.isArray(images) ? images : [])
     .filter((url: unknown) => url && String(url).trim())
     .map((url: string, i: number) => ({
@@ -72,15 +114,21 @@ export async function PUT(
           create: imageUrls.map(({ url, sortOrder }) => ({ url, sortOrder })),
         },
       },
-      include: { images: { orderBy: { sortOrder: "asc" } } },
+      include: {
+        images: { orderBy: { sortOrder: "asc" } },
+        galleryEvent: { select: { title: true } },
+      },
     })
 
     await updateLastUpdated()
     const userName = auth.session.user.name ?? auth.session.user.email ?? "Unknown"
     await logActivity(auth.session.user.id, userName, `update news (${article.title})`)
+    const { galleryEvent, images: imageRows, ...articleRest } = article
     return NextResponse.json({
-      ...article,
-      images: article.images.map((img) => img.url),
+      ...articleRest,
+      images: imageRows.map((img) => img.url),
+      galleryEventId: article.galleryEventId ?? null,
+      galleryEventTitle: galleryEvent?.title ?? null,
     })
   } catch (error) {
     console.error("News update error:", error)
@@ -95,6 +143,8 @@ export async function DELETE(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  await ensureNewsGalleryColumn()
+
   const auth = await requirePermission("news")
   if (!auth.authenticated) return auth.response
 

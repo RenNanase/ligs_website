@@ -4,6 +4,8 @@ const nextConfig = {
     serverActions: {
       bodySizeLimit: "12mb", // Allow PDF uploads up to 10MB with some overhead
     },
+    // With middleware enabled, Next clones request bodies with a default 10MB cap; large gallery batches were truncated (~20 photos at ~500KB each).
+    proxyClientMaxBodySize: "220mb", // Penerbitan PDFs up to 200 MB + multipart overhead
   },
   typescript: {
     ignoreBuildErrors: true,
@@ -11,7 +13,6 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-<<<<<<< HEAD
   allowedDevOrigins: ["118.101.160.33", "192.168.1.114", "w2.ligs.gov.my", "https://w2.ligs.gov.my"],
   async redirects() {
     return [
@@ -36,9 +37,6 @@ const nextConfig = {
       },
     ]
   },
-=======
-  turbopack: {},
->>>>>>> 91866b5ba89e98143037e30abed31cce5d1e3e33
 }
 
 export default nextConfig

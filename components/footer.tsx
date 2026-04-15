@@ -108,7 +108,6 @@ export function Footer() {
   ]
 
   return (
-<<<<<<< HEAD
     <footer className="bg-primary text-primary-foreground">
       <div className="mx-auto max-w-7xl px-6 py-10 sm:py-16">
         {/* Mobile: stack vertically, gap-8 between sections. sm+: 2-col links. lg: 4-column grid */}
@@ -132,16 +131,6 @@ export function Footer() {
             </Link>
             <p className="max-w-sm text-sm italic leading-relaxed text-primary-foreground/95">
               {t("footer.tagline")}
-=======
-    <footer className="border-t border-border bg-primary text-primary-foreground">
-      <div className="mx-auto max-w-7xl px-6 py-16">
-        <div className="grid gap-12 md:grid-cols-3">
-          {/* Brand */}
-          <div>
-            <h3 className="mb-4 text-lg font-bold">LIGS</h3>
-            <p className="text-sm leading-relaxed opacity-80">
-              {t("hero.subtitle")}
->>>>>>> 91866b5ba89e98143037e30abed31cce5d1e3e33
             </p>
           </div>
 
@@ -286,7 +275,6 @@ export function Footer() {
           </div>
         </div>
 
-<<<<<<< HEAD
         {/* Copyright & Last Updated */}
         <div className="mt-8 sm:mt-12 border-t border-primary-foreground/20 pt-6 sm:pt-8 text-center text-sm text-primary-foreground/70">
           <p>
@@ -300,10 +288,6 @@ export function Footer() {
               </time>
             </p>
           )}
-=======
-        <div className="mt-12 border-t border-primary-foreground/20 pt-8 text-center text-sm opacity-60">
-          2026 LIGS. {t("footer.rights")}
->>>>>>> 91866b5ba89e98143037e30abed31cce5d1e3e33
         </div>
       </div>
     </footer>

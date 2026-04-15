@@ -1,17 +1,25 @@
 "use client"
 
 import * as React from "react"
+import type { Dispatch, SetStateAction } from "react"
 import { Upload, X, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
 const MAX_SIZE = 10 * 1024 * 1024
-const MAX_FILES = 20
+/** Matches API gallery upload route batch size. */
+const UPLOAD_BATCH = 100
 
 export interface MultiImageUploadProps {
   value: string[]
-  onChange: (urls: string[]) => void
+  /** Functional updates recommended when appending uploads so the list always merges with the latest state. */
+  onChange: Dispatch<SetStateAction<string[]>>
   uploadPath: string
+  /** Appended as FormData (e.g. `eventId` or `eventTitle` for gallery folder). */
+  uploadSearchParams?: Record<string, string>
+  /**
+   * Only if you need a hard cap (e.g. 5). Omit for no limit (gallery CMS).
+   */
   maxFiles?: number
   maxSize?: number
   disabled?: boolean
@@ -22,15 +30,20 @@ export function MultiImageUpload({
   value,
   onChange,
   uploadPath,
-  maxFiles = MAX_FILES,
+  uploadSearchParams,
+  maxFiles,
   maxSize = MAX_SIZE,
   disabled = false,
   className,
 }: MultiImageUploadProps) {
   const inputRef = React.useRef<HTMLInputElement>(null)
+
   const [dragActive, setDragActive] = React.useState(false)
   const [uploading, setUploading] = React.useState(false)
   const [errors, setErrors] = React.useState<string[]>([])
+
+  const hasHardCap =
+    typeof maxFiles === "number" && Number.isFinite(maxFiles) && maxFiles >= 0
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault()
@@ -40,15 +53,21 @@ export function MultiImageUpload({
 
   const processFiles = async (files: FileList | File[]) => {
     const fileList = Array.from(files)
-    const remaining = maxFiles - value.length
-    if (remaining <= 0) {
-      setErrors([`Maximum ${maxFiles} images. Remove some first.`])
-      return
+
+    if (hasHardCap) {
+      const remaining = maxFiles! - value.length
+      if (remaining <= 0) {
+        setErrors([`Maximum ${maxFiles} images. Remove some first.`])
+        return
+      }
     }
+
+    const remaining = hasHardCap ? maxFiles! - value.length : fileList.length
+    const cap = hasHardCap ? Math.min(remaining, fileList.length) : fileList.length
 
     const toUpload = fileList
       .filter((f) => f.type === "image/jpeg" || f.type === "image/jpg" || f.type === "image/png")
-      .slice(0, remaining)
+      .slice(0, cap)
 
     const invalid = fileList.filter(
       (f) => f.type !== "image/jpeg" && f.type !== "image/jpg" && f.type !== "image/png"
@@ -64,20 +83,30 @@ export function MultiImageUpload({
     if (toUpload.length === 0) return
 
     setUploading(true)
+    const collected: string[] = []
     try {
-      const formData = new FormData()
-      toUpload.forEach((f) => formData.append("files", f))
+      for (let i = 0; i < toUpload.length; i += UPLOAD_BATCH) {
+        const batch = toUpload.slice(i, i + UPLOAD_BATCH)
+        const formData = new FormData()
+        batch.forEach((f) => formData.append("files", f))
+        if (uploadSearchParams?.eventId) formData.set("eventId", uploadSearchParams.eventId)
+        if (uploadSearchParams?.eventTitle) formData.set("eventTitle", uploadSearchParams.eventTitle)
 
-      const res = await fetch(uploadPath, { method: "POST", body: formData })
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}))
-        throw new Error(data.error || `Upload failed (${res.status})`)
+        const res = await fetch(uploadPath, {
+          method: "POST",
+          body: formData,
+        })
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}))
+          throw new Error(data.error || `Upload failed (${res.status})`)
+        }
+
+        const data = await res.json()
+        const urls = data.urls || []
+        if (data.errors?.length) setErrors((e) => [...e, ...data.errors])
+        collected.push(...urls)
       }
-
-      const data = await res.json()
-      const urls = data.urls || []
-      if (data.errors?.length) setErrors((e) => [...e, ...data.errors])
-      onChange([...value, ...urls])
+      onChange((prev) => [...prev, ...collected])
     } catch (err) {
       setErrors((e) => [...e, err instanceof Error ? err.message : "Upload failed"])
     } finally {
@@ -101,9 +130,11 @@ export function MultiImageUpload({
   }
 
   const remove = (index: number) => {
-    onChange(value.filter((_, i) => i !== index))
+    onChange((prev) => prev.filter((_, i) => i !== index))
     setErrors([])
   }
+
+  const remainingLabel = hasHardCap ? `${maxFiles! - value.length} more` : "any number of images"
 
   return (
     <div className={cn("min-w-0 space-y-3", className)}>
@@ -146,7 +177,8 @@ export function MultiImageUpload({
             <>
               <Upload className="h-4 w-4 shrink-0" />
               <span className="break-words text-left">
-                Drag & drop or click (JPEG/PNG, max 10MB, up to {maxFiles - value.length} more)
+                Upload (JPEG/PNG, max 10MB each
+                {hasHardCap ? `, up to ${remainingLabel}` : ", no limit on total count"})
               </span>
             </>
           )}
@@ -162,33 +194,38 @@ export function MultiImageUpload({
       )}
 
       {value.length > 0 && (
-        <div className="grid min-w-0 grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3">
-          {value.map((url, i) => (
-            <div
-              key={url + i}
-              className="group relative aspect-square overflow-hidden rounded-lg border border-border bg-muted"
-            >
-              <img src={url} alt="" className="h-full w-full object-cover" />
-              <Button
-                type="button"
-                variant="destructive"
-                size="icon"
-                className="absolute right-1 top-1 h-7 w-7 opacity-0 transition-opacity group-hover:opacity-100"
-                onClick={() => remove(i)}
-                disabled={disabled}
-                aria-label="Remove image"
+        <div className="max-h-[min(420px,55vh)] min-w-0 overflow-y-auto rounded-lg border border-border bg-muted/20 p-2">
+          <div className="grid min-w-0 grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3">
+            {value.map((url, i) => (
+              <div
+                key={`${i}-${url}`}
+                className="group relative aspect-square overflow-hidden rounded-lg border border-border bg-muted"
               >
-                <X className="h-3.5 w-3.5" />
-              </Button>
-            </div>
-          ))}
+                <img src={url} alt="" className="h-full w-full object-cover" loading="lazy" decoding="async" />
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="icon"
+                  className="absolute right-1 top-1 h-7 w-7 opacity-0 transition-opacity group-hover:opacity-100"
+                  onClick={() => remove(i)}
+                  disabled={disabled}
+                  aria-label="Remove image"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
-      {value.length > 0 && (
+      {value.length > 0 && hasHardCap && (
         <p className="text-sm text-muted-foreground">
           {value.length} / {maxFiles} images
         </p>
+      )}
+      {value.length > 0 && !hasHardCap && (
+        <p className="text-sm text-muted-foreground">{value.length} image(s) staged</p>
       )}
     </div>
   )

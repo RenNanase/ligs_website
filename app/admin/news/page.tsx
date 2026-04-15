@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label"
 import { Plus, Pencil, Trash2, X, Send } from "lucide-react"
 import { ImageUpload } from "@/components/ui/image-upload"
 import { useSession } from "next-auth/react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 
 const MAX_IMAGES = 10
 
@@ -24,6 +24,7 @@ const emptyArticle: Omit<NewsArticle, "id"> = {
   images: [],
   category: "",
   status: "draft",
+  galleryEventId: null,
 }
 
 export default function AdminNewsPage() {
@@ -34,14 +35,38 @@ export default function AdminNewsPage() {
   const [creating, setCreating] = useState(false)
   const [form, setForm] = useState(emptyArticle)
   const [publishing, setPublishing] = useState<string | null>(null)
+  const [galleryOptions, setGalleryOptions] = useState<{ id: string; title: string }[]>([])
 
   const role = (session?.user as { role?: string })?.role ?? "author"
   const canPublish = canPublishNews(role)
 
+  const showForm = creating || editing
+
+  useEffect(() => {
+    if (!showForm) return
+    let cancelled = false
+    fetch("/api/gallery/events/select", { credentials: "include" })
+      .then((r) => (r.ok ? r.json() : []))
+      .then((data: { id: string; title: string }[]) => {
+        if (!cancelled && Array.isArray(data)) setGalleryOptions(data)
+      })
+      .catch(() => {
+        if (!cancelled) setGalleryOptions([])
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [showForm])
+
   const handleCreate = async () => {
     const images = (form.images ?? []).filter((u) => u && u.trim())
     const status = canPublish && form.status === "published" ? "published" : "draft"
-    const dataToSave = { ...form, images, status }
+    const dataToSave = {
+      ...form,
+      images,
+      status,
+      galleryEventId: form.galleryEventId?.trim() ? form.galleryEventId.trim() : null,
+    }
     await createNews(dataToSave)
     setCreating(false)
     setForm(emptyArticle)
@@ -51,7 +76,12 @@ export default function AdminNewsPage() {
     if (!editing) return
     const images = (form.images ?? []).filter((u) => u && u.trim())
     const status = canPublish ? (form.status ?? "draft") : "draft"
-    const dataToSave = { ...form, images, status }
+    const dataToSave = {
+      ...form,
+      images,
+      status,
+      galleryEventId: form.galleryEventId?.trim() ? form.galleryEventId.trim() : null,
+    }
     await updateNews(editing.id, dataToSave)
     setEditing(null)
     setForm(emptyArticle)
@@ -82,6 +112,7 @@ export default function AdminNewsPage() {
       images: article.images ?? [],
       category: article.category,
       status: (article.status as "draft" | "published") ?? "draft",
+      galleryEventId: article.galleryEventId ?? null,
     })
   }
 
@@ -119,8 +150,6 @@ export default function AdminNewsPage() {
     setCreating(false)
     setForm(emptyArticle)
   }
-
-  const showForm = creating || editing
 
   return (
     <AdminLayout>
@@ -228,6 +257,31 @@ export default function AdminNewsPage() {
                 }
                 className="bg-background"
               />
+            </div>
+            <div className="md:col-span-2">
+              <Label className="mb-2 block text-sm font-medium text-card-foreground">
+                Related gallery (optional)
+              </Label>
+              <p className="mb-2 text-xs text-muted-foreground">
+                If selected, the berita page will show a link to this gallery event.
+              </p>
+              <select
+                value={form.galleryEventId ?? ""}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    galleryEventId: e.target.value ? e.target.value : null,
+                  })
+                }
+                className="flex h-10 w-full max-w-xl rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <option value="">— None —</option>
+                {galleryOptions.map((ev) => (
+                  <option key={ev.id} value={ev.id}>
+                    {ev.title}
+                  </option>
+                ))}
+              </select>
             </div>
             {canPublish && (
               <div>

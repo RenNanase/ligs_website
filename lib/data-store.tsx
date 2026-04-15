@@ -44,6 +44,9 @@ export interface NewsArticle {
   images: string[]
   category: string
   status?: "draft" | "published"
+  /** Optional related public gallery event (CMS picker). */
+  galleryEventId?: string | null
+  galleryEventTitle?: string | null
 }
 
 export type AnnouncementLink = { url: string; text: string }
@@ -290,28 +293,39 @@ export function DataStoreProvider({
 
   useEffect(() => {
     async function loadAll() {
-      try {
-        const [b, s, n, a, td, ac, l] = await Promise.all([
-          api.getBanners(),
-          api.getStats(),
-          api.getNews(),
-          api.getAnnouncements(),
-          api.getTenders(),
-          api.getAchievements(),
-          api.getLanding(),
-        ])
-        setBanners(Array.isArray(b) && b.length > 0 ? b : defaultBanners)
-        setStats(Array.isArray(s) && s.length > 0 ? s : defaultStats)
-        setNews(Array.isArray(n) ? n : defaultNews)
-        setAnnouncements(Array.isArray(a) ? a : defaultAnnouncements)
-        setTenders(Array.isArray(td) ? td : defaultTenders)
-        setAchievements(Array.isArray(ac) ? ac : [])
-        setLanding(l && typeof l === "object" ? l : defaultLanding)
-      } catch (error) {
-        console.error("Failed to fetch data from API, using defaults:", error)
-      } finally {
-        setIsLoading(false)
-      }
+      const results = await Promise.allSettled([
+        api.getBanners(),
+        api.getStats(),
+        api.getNews(),
+        api.getAnnouncements(),
+        api.getTenders(),
+        api.getAchievements(),
+        api.getLanding(),
+      ])
+      const [b, s, n, a, td, ac, l] = results.map((r, i) => {
+        if (r.status === "fulfilled") return r.value
+        console.error(`Failed to fetch CMS slice [${i}]:`, r.reason)
+        return undefined
+      }) as [
+        BannerSlide[] | undefined,
+        StatItem[] | undefined,
+        NewsArticle[] | undefined,
+        Announcement[] | undefined,
+        Tender[] | undefined,
+        Achievement[] | undefined,
+        LandingContent | null | undefined,
+      ]
+      if (Array.isArray(b) && b.length > 0) setBanners(b)
+      else if (b !== undefined) setBanners(defaultBanners)
+      if (Array.isArray(s) && s.length > 0) setStats(s)
+      else if (s !== undefined) setStats(defaultStats)
+      if (Array.isArray(n)) setNews(n)
+      else if (n !== undefined) setNews(defaultNews)
+      if (Array.isArray(a)) setAnnouncements(a)
+      if (Array.isArray(td)) setTenders(td)
+      if (Array.isArray(ac)) setAchievements(ac)
+      if (l && typeof l === "object") setLanding(l)
+      setIsLoading(false)
     }
     loadAll()
   }, [])

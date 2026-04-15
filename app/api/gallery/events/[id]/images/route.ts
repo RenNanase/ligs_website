@@ -3,7 +3,54 @@ import { requireAuth } from "@/lib/auth"
 import { NextResponse } from "next/server"
 import { updateLastUpdated } from "@/lib/update-last-updated"
 
-const MAX_IMAGES = 20
+const CHUNK = 250
+
+/** Paginated images for an event (public). */
+export async function GET(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params
+    const { searchParams } = new URL(request.url)
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10))
+    const limit = Math.min(120, Math.max(1, parseInt(searchParams.get("limit") || "48", 10)))
+    const skip = (page - 1) * limit
+
+    const eventExists = await prisma.galleryEvent.findUnique({
+      where: { id },
+      select: { id: true },
+    })
+    if (!eventExists) {
+      return NextResponse.json({ error: "Event not found" }, { status: 404 })
+    }
+
+    const [total, images] = await Promise.all([
+      prisma.galleryEventImage.count({ where: { eventId: id } }),
+      prisma.galleryEventImage.findMany({
+        where: { eventId: id },
+        orderBy: { sortOrder: "asc" },
+        skip,
+        take: limit,
+        select: { id: true, url: true, sortOrder: true },
+      }),
+    ])
+
+    const totalPages = Math.max(1, Math.ceil(total / limit))
+
+    return NextResponse.json({
+      images,
+      total,
+      page,
+      limit,
+      totalPages,
+      hasMore: page < totalPages,
+    })
+  } catch (err) {
+    console.error("GET /api/gallery/events/[id]/images error:", err)
+    return NextResponse.json({ error: "Failed to fetch images" }, { status: 500 })
+  }
+}
 
 export async function POST(
   request: Request,
@@ -17,34 +64,36 @@ export async function POST(
     const body = await request.json()
     const urls = Array.isArray(body.urls) ? body.urls : Array.isArray(body.url) ? body.url : [body.url].filter(Boolean)
 
-    if (urls.length === 0) {
+    const cleaned = urls.map((u: unknown) => String(u).trim()).filter(Boolean)
+    if (cleaned.length === 0) {
       return NextResponse.json({ error: "At least one image URL required" }, { status: 400 })
     }
 
-    const count = await prisma.galleryEventImage.count({ where: { eventId: id } })
-    const toAdd = urls.slice(0, Math.max(0, MAX_IMAGES - count))
+    const startOrder =
+      (await prisma.galleryEventImage.aggregate({
+        where: { eventId: id },
+        _max: { sortOrder: true },
+      }))._max.sortOrder ?? -1
 
-    if (toAdd.length === 0) {
-      return NextResponse.json(
-        { error: `Maximum ${MAX_IMAGES} images per event` },
-        { status: 400 }
-      )
+    for (let offset = 0; offset < cleaned.length; offset += CHUNK) {
+      const slice = cleaned.slice(offset, offset + CHUNK)
+      const base = startOrder + 1 + offset
+      await prisma.galleryEventImage.createMany({
+        data: slice.map((url: string, i: number) => ({
+          eventId: id,
+          url,
+          sortOrder: base + i,
+        })),
+      })
     }
 
-    await prisma.galleryEventImage.createMany({
-      data: toAdd.map((url: string, i: number) => ({
-        eventId: id,
-        url: String(url).trim(),
-        sortOrder: count + i,
-      })),
-    })
+    const total = await prisma.galleryEventImage.count({ where: { eventId: id } })
+    await updateLastUpdated()
 
-    const event = await prisma.galleryEvent.findUnique({
-      where: { id },
-      include: { images: { orderBy: { sortOrder: "asc" } } },
+    return NextResponse.json({
+      added: cleaned.length,
+      totalImages: total,
     })
-
-    return NextResponse.json(event)
   } catch (err) {
     console.error("POST /api/gallery/events/[id]/images error:", err)
     return NextResponse.json({ error: "Failed to add images" }, { status: 500 })
@@ -76,13 +125,8 @@ export async function PUT(
       )
     )
 
-    const event = await prisma.galleryEvent.findUnique({
-      where: { id },
-      include: { images: { orderBy: { sortOrder: "asc" } } },
-    })
-
     await updateLastUpdated()
-    return NextResponse.json(event)
+    return NextResponse.json({ success: true })
   } catch (err) {
     console.error("PUT /api/gallery/events/[id]/images error:", err)
     return NextResponse.json({ error: "Failed to reorder" }, { status: 500 })

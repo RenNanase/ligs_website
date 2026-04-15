@@ -18,7 +18,8 @@ const AKAL_SCHEMA = z.object({
   tahunPeperiksaan: z.string().min(1, "Tahun wajib diisi").max(20),
   noAngkaGiliran: z.string().min(1, "No. angka giliran wajib diisi").max(50),
   keputusanPeperiksaan: z.string().min(1, "Keputusan peperiksaan wajib diisi").max(255),
-  pdfUrl: z.string().min(1, "Sila muat naik fail PDF.").max(500),
+  pdfUrl: z.string().min(1, "Sila muat naik fail PDF keputusan peperiksaan.").max(500),
+  mykadPdfUrl: z.string().min(1, "Sila muat naik fail PDF salinan MyKad.").max(500),
 })
 
 function getClientIp(req: NextRequest): string {
@@ -71,6 +72,7 @@ export async function POST(req: NextRequest) {
         noAngkaGiliran: data.noAngkaGiliran.trim(),
         keputusanPeperiksaan: data.keputusanPeperiksaan.trim(),
         pdfUrl: data.pdfUrl.trim(),
+        mykadPdfUrl: data.mykadPdfUrl.trim(),
       },
     })
     return NextResponse.json({ success: true, id: submission.id })

@@ -6,7 +6,7 @@ import path from "path"
 import crypto from "crypto"
 
 const ALLOWED_TYPES = new Set(["application/pdf", "application/x-pdf"])
-const MAX_SIZE = 50 * 1024 * 1024 // 50 MB
+const MAX_SIZE = 200 * 1024 * 1024 // 200 MB
 const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads", "penerbitan")
 
 export async function POST(request: Request) {
@@ -30,7 +30,7 @@ export async function POST(request: Request) {
   }
 
   if (file.size > MAX_SIZE) {
-    return NextResponse.json({ error: "File too large. Maximum size is 50 MB" }, { status: 400 })
+    return NextResponse.json({ error: "File too large. Maximum size is 200 MB" }, { status: 400 })
   }
 
   const uniqueName = `${Date.now()}-${crypto.randomBytes(8).toString("hex")}.pdf`

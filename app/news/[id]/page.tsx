@@ -127,6 +127,8 @@ export default function NewsDetailPage() {
             date: data.date,
             category: data.category,
             images: data.images || [],
+            galleryEventId: data.galleryEventId ?? null,
+            galleryEventTitle: data.galleryEventTitle ?? null,
           })
       })
       .catch(() => {})
@@ -221,6 +223,32 @@ export default function NewsDetailPage() {
               <div className="prose prose-neutral max-w-none text-muted-foreground">
                 <p className="whitespace-pre-wrap leading-relaxed">{content}</p>
               </div>
+
+              {article.galleryEventId && article.galleryEventTitle && (
+                <p className="mt-8 border-t border-border pt-6 text-sm leading-relaxed text-muted-foreground">
+                  {language === "en" ? (
+                    <>
+                      See more in the gallery{" "}
+                      <Link
+                        href={`/gallery?event=${encodeURIComponent(article.galleryEventId)}`}
+                        className="font-semibold text-primary underline-offset-4 hover:underline"
+                      >
+                        {article.galleryEventTitle}
+                      </Link>
+                    </>
+                  ) : (
+                    <>
+                      Lihat lebih banyak di gallery{" "}
+                      <Link
+                        href={`/gallery?event=${encodeURIComponent(article.galleryEventId)}`}
+                        className="font-semibold text-primary underline-offset-4 hover:underline"
+                      >
+                        {article.galleryEventTitle}
+                      </Link>
+                    </>
+                  )}
+                </p>
+              )}
             </div>
           </div>
         </div>

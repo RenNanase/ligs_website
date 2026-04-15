@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma"
+import { ensureNewsGalleryColumn } from "@/lib/ensure-news-gallery-column"
 import type {
   BannerSlide,
   StatItem,
@@ -43,30 +44,65 @@ async function fetchInitialDataUncached(): Promise<InitialData> {
   }
 }
 
+/** Isolates failures so one broken query does not clear the entire site (empty arrays are returned instead). */
+async function safeQuery<T>(label: string, fn: () => Promise<T>, fallback: T): Promise<T> {
+  try {
+    return await fn()
+  } catch (error) {
+    console.error(`[fetchInitialData] ${label} failed:`, error)
+    return fallback
+  }
+}
+
+async function fetchNewsForInitialData() {
+  const base = {
+    where: { isArchived: false },
+    orderBy: { date: "desc" as const },
+    include: {
+      images: { orderBy: { sortOrder: "asc" as const } },
+    },
+  }
+  try {
+    return await prisma.newsArticle.findMany({
+      ...base,
+      include: {
+        ...base.include,
+        galleryEvent: { select: { title: true } },
+      },
+    })
+  } catch (error) {
+    // e.g. migration not applied yet — `galleryEventId` / relation missing
+    console.warn("[fetchInitialData] news with gallery relation failed, loading without link:", error)
+    return prisma.newsArticle.findMany(base)
+  }
+}
+
 async function fetchInitialDataFromDb(): Promise<InitialData> {
-    const [banners, stats, news, announcements, tenders, achievements, landing, settings] =
-      await Promise.all([
-        prisma.bannerSlide.findMany({ orderBy: { sortOrder: "asc" } }),
-        prisma.statItem.findMany({ orderBy: { sortOrder: "asc" } }),
-        prisma.newsArticle.findMany({
-          where: { isArchived: false },
-          orderBy: { date: "desc" },
-          include: { images: { orderBy: { sortOrder: "asc" } } },
-        }),
+  await ensureNewsGalleryColumn()
+
+  const [banners, stats, news, announcements, tenders, achievements, landing, settings] =
+    await Promise.all([
+      safeQuery("banners", () => prisma.bannerSlide.findMany({ orderBy: { sortOrder: "asc" } }), []),
+      safeQuery("stats", () => prisma.statItem.findMany({ orderBy: { sortOrder: "asc" } }), []),
+      safeQuery("news", fetchNewsForInitialData, []),
+      safeQuery("announcements", () =>
         prisma.announcement.findMany({
           orderBy: [{ pinned: "desc" }, { date: "desc" }],
-        }),
+        }), []),
+      safeQuery("tenders", () =>
         prisma.tender.findMany({
           orderBy: [{ status: "asc" }, { closingDate: "desc" }],
-        }),
+        }), []),
+      safeQuery("achievements", () =>
         prisma.achievement.findMany({
           orderBy: { achievementDate: "desc" },
-        }),
+        }), []),
+      safeQuery("landing", () =>
         prisma.landingContent.findFirst({
           include: { highlights: { orderBy: { sortOrder: "asc" } } },
-        }),
-        prisma.siteSettings.findUnique({ where: { id: SINGLETON_ID } }),
-      ])
+        }), null),
+      safeQuery("settings", () => prisma.siteSettings.findUnique({ where: { id: SINGLETON_ID } }), null),
+    ])
 
     const newsTransformed: NewsArticle[] = news.map((a) => ({
       id: a.id,
@@ -77,6 +113,8 @@ async function fetchInitialDataFromDb(): Promise<InitialData> {
       date: a.date,
       category: a.category,
       images: a.images.map((img) => img.url),
+      galleryEventId: a.galleryEventId ?? null,
+      galleryEventTitle: a.galleryEvent?.title ?? null,
     }))
 
     const tendersTransformed: Tender[] = tenders.map((t) => ({
